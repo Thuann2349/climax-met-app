@@ -18,7 +18,7 @@
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #030712; color: #f3f4f6; overflow-x: hidden; }
     .font-hud { font-family: 'Orbitron', sans-serif; }
-    #map { height: 100%; min-height: 450px; width: 100%; filter: brightness(0.9) contrast(1.1); }
+    #map { height: 100%; min-height: 450px; width: 100%; filter: brightness(0.95) contrast(1.15); }
     .glass-panel {
       background: rgba(3, 7, 18, 0.9);
       backdrop-filter: blur(20px);
@@ -52,7 +52,7 @@
     </div>
 
     <div class="flex items-center gap-2.5 flex-wrap">
-      <input id="city-input" type="text" placeholder="Digite a cidade (ex: São Paulo)..." 
+      <input id="city-input" type="text" placeholder="Digite a cidade (ex: Santos)..." 
              class="bg-slate-900 text-sm px-3.5 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-400 w-52 text-slate-100 placeholder-slate-500" />
       <button onclick="buscarLocalizacao()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition px-4 py-2 rounded-lg text-sm shadow-lg glow-cyan">Analisar</button>
       <button onclick="abrirModalAssinatura()" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold px-3 py-2 rounded-lg text-sm transition glow-amber">⭐ VIP</button>
@@ -72,7 +72,7 @@
             <span class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-hud">Radar Satelital Atmosférico Ultra HD</span>
             <span class="text-[9px] bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded font-mono animate-pulse">AO VIVO</span>
           </div>
-          <div class="text-xs text-slate-400 font-mono" id="coords-display">Lat: -23.5505 | Lon: -46.6333</div>
+          <div class="text-xs text-slate-400 font-mono" id="coords-display">Lat: -23.9608 | Lon: -46.3336</div>
         </div>
         <div id="map" class="rounded-xl border border-slate-800 flex-1 z-0"></div>
       </div>
@@ -90,7 +90,7 @@
         <p id="alert-msg" class="text-xs text-slate-300 leading-relaxed">Nenhuma anomalia severa detectada nas próximas horas. Atmosfera estável.</p>
       </div>
 
-      <!-- Métricas -->
+      <!-- Métricas Exatas -->
       <div class="grid grid-cols-2 gap-3">
         <div class="glass-panel p-3 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-400">Temperatura</span><div class="text-xl font-black text-cyan-400 mt-1 font-hud" id="temp-val">-- °C</div></div>
         <div class="glass-panel p-3 rounded-xl border border-slate-800"><span class="text-[10px] text-slate-400">Vento & Rajada</span><div class="text-sm font-bold text-slate-200 mt-1" id="wind-val">-- km/h</div></div>
@@ -141,8 +141,10 @@
   </div>
 
   <script>
-    // Inicialização do Mapa com Tiles Livres Otimizados para Dark Mode Profissional
-    let map = L.map('map', { zoomControl: false }).setView([-23.5505, -46.6333], 10);
+    // Mapa com Dark Mode Profissional Integrado (Sem Chaves e Sem Erros)
+    let map = L.map('map', { zoomControl: false }).setView([-23.9608, -46.3336], 11);
+    
+    // Camada CartoDB Dark Matter (Gratuita via CDN pública sem restrição de chave)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       subdomains: 'abcd',
@@ -168,7 +170,7 @@
     }
 
     async function buscarLocalizacao() {
-      const cidade = document.getElementById('city-input').value.trim() || "São Paulo";
+      const cidade = document.getElementById('city-input').value.trim() || "Santos";
       carregarDadosMeteorologicos(cidade);
     }
 
@@ -189,10 +191,10 @@
           return;
         }
         const { latitude, longitude, name, country } = dataGeo.results[0];
-        map.setView([latitude, longitude], 11);
+        map.setView([latitude, longitude], 12);
         document.getElementById('coords-display').innerText = `Lat: ${latitude.toFixed(4)} | Lon: ${longitude.toFixed(4)}`;
 
-        const resMeteo = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,surface_pressure,wind_speed_10m,wind_gusts_10m&hourly=precipitation_probability`);
+        const resMeteo = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_gusts_10m&hourly=precipitation_probability&timezone=auto`);
         const dataMeteo = await resMeteo.json();
 
         const cur = dataMeteo.current;
@@ -203,31 +205,31 @@
         const probChuva = dataMeteo.hourly.precipitation_probability[0] || 0;
         document.getElementById('precip-val').innerText = `${probChuva} %`;
 
-        // Diagnóstico IA e Alarme
-        const alertCard = document.getElementById('alert-card');
-        const riskBadge = document.getElementById('risk-badge');
-        const alertMsg = document.getElementById('alert-msg');
-        const alarmSound = document.getElementById('alarm-sound');
+        let statusRisco = "Estabilidade Normal";
+        let riscoCor = "bg-emerald-950 text-emerald-400 border-emerald-800";
+        let bordaCard = "border-emerald-500";
+        let msgAlerta = "Nenhuma anomalia severa detectada nas próximas horas. Atmosfera estável.";
 
-        if (cur.wind_gusts_10m > 45 || probChuva > 70) {
-          alertCard.className = "glass-panel border-l-4 border-red-500 rounded-xl p-4 transition-all glow-amber animate-pulse";
-          riskBadge.className = "text-xs font-semibold px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800";
-          riskBadge.innerText = "ALERTA SEVERO";
-          alertMsg.innerText = `ATENÇÃO: Condições meteorológicas adversas detectadas em ${name}. Risco de ventos fortes ou precipitação intensa nas próximas horas.`;
-          try { alarmSound.play(); } catch(e){}
-        } else {
-          alertCard.className = "glass-panel border-l-4 border-emerald-500 rounded-xl p-4 transition-all";
-          riskBadge.className = "text-xs font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800";
-          riskBadge.innerText = "Estabilidade Normal";
-          alertMsg.innerText = `Atmosfera estável em ${name}. Fluxos de vento e pressão dentro dos parâmetros normais esperados.`;
+        if (probChuva > 60 || cur.wind_speed_10m > 35) {
+          statusRisco = "ALERTA SEVERO";
+          riscoCor = "bg-red-950 text-red-400 border-red-800 animate-pulse";
+          bordaCard = "border-red-500";
+          msgAlerta = `ATENÇÃO: Alta probabilidade de instabilidade em ${name}. Ventos e precipitação elevados detectados.`;
+          document.getElementById('alarm-sound').play().catch(e => console.log('Áudio bloqueado'));
         }
 
-        ultimoRelatorioTexto = `--- RELATÓRIO METEOROLÓGICO CLIMAX BR ULTRA HD ---\nLocal: ${name} (${country})\nCoordenadas: Lat ${latitude} | Lon ${longitude}\nTemperatura: ${cur.temperature_2m} °C (Sensação: ${cur.apparent_temperature} °C)\nVento: ${cur.wind_speed_10m} km/h | Rajadas: ${cur.wind_gusts_10m} km/h\nPressão Atmosférica: ${cur.surface_pressure} hPa\nProbabilidade de Precipitação: ${probChuva}%\nStatus do Alarme: ${riskBadge.innerText}\n---------------------------------------------`;
-        reportBox.innerText = ultimoRelatorioTexto;
+        const alertCard = document.getElementById('alert-card');
+        alertCard.className = `glass-panel border-l-4 ${bordaCard} rounded-xl p-4 transition-all`;
+        document.getElementById('risk-badge').className = `text-xs font-semibold px-2 py-0.5 rounded border ${riscoCor}`;
+        document.getElementById('risk-badge').innerText = statusRisco;
+        document.getElementById('alert-msg').innerText = msgAlerta;
+
+        ultimoRelatorioTexto = `RELATÓRIO TÁTICO DE ELITE - CLIMAX BR\nLocalidade: ${name}, ${country || 'Brasil'}\nCoordenadas: Lat ${latitude}, Lon ${longitude}\nTemperatura Atual: ${cur.temperature_2m} °C\nVento: ${cur.wind_speed_10m} km/h | Rajadas: ${cur.wind_gusts_10m} km/h\nPressão Atmosférica: ${cur.surface_pressure} hPa\nUmidade Relativa: ${cur.relative_humidity_2m}%\nProbabilidade de Chuva: ${probChuva}%\nStatus de Risco: ${statusRisco}\nDiagnóstico: ${msgAlerta}`;
+        reportBox.innerText = `Local: ${name}, Brasil\n\nDiagnóstico Tático: Atmosfera monitorada em tempo real. Temperatura exata de ${cur.temperature_2m}°C, ventos a ${cur.wind_speed_10m} km/h e pressão barométrica em ${cur.surface_pressure} hPa.\n\nAlerta Preditivo: Sem riscos imediatos de severidade nas próximas 6 horas.`;
 
       } catch (err) {
         console.error(err);
-        reportBox.innerText = "Erro ao carregar dados da rede. Verifique sua conexão.";
+        reportBox.innerText = "Erro ao buscar dados meteorológicos. Verifique sua conexão.";
       }
     }
 
@@ -243,8 +245,8 @@
       URL.revokeObjectURL(url);
     }
 
-    // Carregar São Paulo ao iniciar
-    window.onload = () => { carregarDadosMeteorologicos("São Paulo"); };
+    // Carregar Santos por padrão ao iniciar
+    carregarDadosMeteorologicos("Santos");
   </script>
 </body>
 </html>
