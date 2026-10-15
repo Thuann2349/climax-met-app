@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Climax BR - Epic Global Meteorology</title>
+  <title>Climax BR - Ultra HD Global Radar</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,23 +18,23 @@
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #030712; color: #f3f4f6; overflow-x: hidden; }
     .font-hud { font-family: 'Orbitron', sans-serif; }
-    #map { height: 100%; min-height: 450px; width: 100%; }
+    #map { height: 100%; min-height: 450px; width: 100%; filter: brightness(0.85) contrast(1.15) saturate(1.2); }
     .glass-panel {
-      background: rgba(3, 7, 18, 0.88);
+      background: rgba(3, 7, 18, 0.9);
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(56, 189, 248, 0.18);
-      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
     }
-    .glow-cyan { box-shadow: 0 0 25px rgba(56, 189, 248, 0.3); }
-    .glow-amber { box-shadow: 0 0 25px rgba(245, 158, 11, 0.3); }
+    .glow-cyan { box-shadow: 0 0 25px rgba(56, 189, 248, 0.35); }
+    .glow-amber { box-shadow: 0 0 25px rgba(245, 158, 11, 0.35); }
     @keyframes radar-sweep {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
     .radar-scan {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: conic-gradient(from 0deg at 50% 50%, rgba(56, 189, 248, 0) 0deg, rgba(56, 189, 248, 0.15) 360deg);
-      animation: radar-sweep 6s linear infinite; pointer-events: none; border-radius: 1rem;
+      background: conic-gradient(from 0deg at 50% 50%, rgba(56, 189, 248, 0) 0deg, rgba(56, 189, 248, 0.18) 360deg);
+      animation: radar-sweep 5s linear infinite; pointer-events: none; border-radius: 1rem; z-index: 10;
     }
   </style>
 </head>
@@ -44,16 +44,16 @@
   <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
   <!-- Cabeçalho -->
-  <header class="border-b border-cyan-900/40 bg-slate-950/90 px-6 py-4 flex flex-wrap justify-between items-center gap-4 backdrop-blur-md sticky top-0 z-40">
+  <header class="border-b border-cyan-900/40 bg-slate-950/95 px-6 py-4 flex flex-wrap justify-between items-center gap-4 backdrop-blur-md sticky top-0 z-40">
     <div class="flex items-center space-x-3">
       <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping"></div>
       <h1 class="text-xl font-black tracking-widest text-white font-hud">CLIMAX <span class="text-cyan-400">BR</span></h1>
-      <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800 font-mono hidden sm:inline-block">WINDY EPIC ENGINE</span>
+      <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800 font-mono hidden sm:inline-block">ULTRA HD ENGINE</span>
     </div>
 
     <div class="flex items-center gap-2.5 flex-wrap">
-      <input id="city-input" type="text" placeholder="Digite a cidade global..." 
-             class="bg-slate-900 text-sm px-3.5 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-400 w-44 text-slate-100 placeholder-slate-500" />
+      <input id="city-input" type="text" placeholder="Digite a cidade (ex: São Paulo)..." 
+             class="bg-slate-900 text-sm px-3.5 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-400 w-52 text-slate-100 placeholder-slate-500" />
       <button onclick="buscarLocalizacao()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition px-4 py-2 rounded-lg text-sm shadow-lg glow-cyan">Analisar</button>
       <button onclick="abrirModalAssinatura()" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold px-3 py-2 rounded-lg text-sm transition glow-amber">⭐ VIP</button>
       <button onclick="abrirModalAdmin()" class="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-800 font-semibold px-3 py-2 rounded-lg text-sm transition">🔒 Admin</button>
@@ -67,9 +67,9 @@
     <section class="lg:col-span-2 flex flex-col gap-4">
       <div class="glass-panel rounded-2xl p-4 flex-1 flex flex-col relative overflow-hidden">
         <div class="radar-scan"></div>
-        <div class="flex justify-between items-center mb-3 z-10">
+        <div class="flex justify-between items-center mb-3 z-20">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-hud">Radar Satelital Atmosférico</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-hud">Radar Satelital Atmosférico Ultra HD</span>
             <span class="text-[9px] bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded font-mono animate-pulse">AO VIVO</span>
           </div>
           <div class="text-xs text-slate-400 font-mono" id="coords-display">Lat: -23.5505 | Lon: -46.6333</div>
@@ -87,7 +87,7 @@
           <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 font-hud">Status Alarme Preditivo</span>
           <span id="risk-badge" class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Estabilidade Normal</span>
         </div>
-        <p id="alert-msg" class="text-xs text-slate-300 leading-relaxed">Nenhuma anomalia severa nas próximas horas. Atmosfera estável.</p>
+        <p id="alert-msg" class="text-xs text-slate-300 leading-relaxed">Nenhuma anomalia severa detectada nas próximas horas. Atmosfera estável.</p>
       </div>
 
       <!-- Métricas -->
@@ -103,9 +103,9 @@
         <div>
           <h2 class="text-xs font-bold tracking-wide text-white uppercase font-hud mb-3 flex items-center justify-between">
             <span>Relatório Diário de Elite</span>
-            <span class="text-[9px] text-cyan-400 font-mono">IA Local / API</span>
+            <span class="text-[9px] text-cyan-400 font-mono">Ultra HD AI</span>
           </h2>
-          <div id="ai-report" class="text-xs leading-relaxed text-slate-300 space-y-2 max-h-48 overflow-y-auto font-mono">Carregando diagnóstico meteorológico avançado...</div>
+          <div id="ai-report" class="text-xs leading-relaxed text-slate-300 space-y-2 max-h-48 overflow-y-auto font-mono">Aguardando consulta de localidade...</div>
         </div>
         <button onclick="baixarRelatorio()" class="w-full mt-4 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 text-xs font-semibold py-2.5 rounded-lg border border-cyan-800 transition">📥 Baixar Relatório Completo (.txt)</button>
       </div>
@@ -125,7 +125,7 @@
         <button onclick="fazerLoginAdmin()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-lg text-xs transition">Autenticar</button>
       </div>
       <div id="admin-dashboard" class="hidden space-y-4 text-xs text-slate-300">
-        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">Consultas Feitas</div><div id="admin-q-count" class="text-xl font-bold text-cyan-400 font-hud mt-1">1280</div></div>
+        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800"><div class="text-slate-400">Consultas Feitas no Sistema</div><div id="admin-q-count" class="text-xl font-bold text-cyan-400 font-hud mt-1">0</div></div>
         <button onclick="fecharModalAdmin()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-lg">Fechar</button>
       </div>
     </div>
@@ -134,19 +134,23 @@
   <!-- Modal Assinatura -->
   <div id="assinatura-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
     <div class="glass-panel max-w-sm w-full rounded-2xl p-6 border border-amber-500/30 text-center">
-      <h3 class="text-base font-bold text-white font-hud mb-2">⭐ Climax BR VIP</h3>
-      <p class="text-xs text-slate-300 mb-4">Desbloqueie previsões em tempo real ultra precisas e alertas instantâneos.</p>
+      <h3 class="text-base font-bold text-white font-hud mb-2">⭐ Climax BR VIP Ultra HD</h3>
+      <p class="text-xs text-slate-300 mb-4">Desbloqueie previsões meteorológicas globais em tempo real com taxa de precisão militar.</p>
       <button onclick="fecharModalAssinatura()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-lg text-xs">Assinar Agora (Pix / Cartão)</button>
     </div>
   </div>
 
   <script>
+    // Inicialização do Mapa com Tiles Completamente Livres e Estilizados em Dark Mode Profissional
     let map = L.map('map', { zoomControl: false }).setView([-23.5505, -46.6333], 10);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19, subdomains: 'abcd'
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '&copy; OpenStreetMap & CARTO'
     }).addTo(map);
 
     let queryCount = 0;
+    let ultimoRelatorioTexto = "Nenhum relatório gerado ainda.";
 
     function abrirModalAdmin() { document.getElementById('admin-modal').classList.remove('hidden'); }
     function fecharModalAdmin() { document.getElementById('admin-modal').classList.add('hidden'); }
@@ -154,7 +158,7 @@
     function fecharModalAssinatura() { document.getElementById('assinatura-modal').classList.add('hidden'); }
 
     function fazerLoginAdmin() {
-      const pass = document.getElementById('admin-pass5').value || document.getElementById('admin-pass').value;
+      const pass = document.getElementById('admin-pass').value;
       if (pass === 'admin123') {
         document.getElementById('admin-login-box').classList.add('hidden');
         document.getElementById('admin-dashboard').classList.remove('hidden');
@@ -164,7 +168,7 @@
     }
 
     async function buscarLocalizacao() {
-      const cidade = document.getElementById('city-input').value || "São Paulo";
+      const cidade = document.getElementById('city-input').value.trim() || "São Paulo";
       carregarDadosMeteorologicos(cidade);
     }
 
@@ -172,49 +176,106 @@
       queryCount++;
       const qElem = document.getElementById('admin-q-count');
       if(qElem) qElem.innerText = queryCount;
+
+      const reportBox = document.getElementById('ai-report');
+      reportBox.innerText = `Analisando dados globais Ultra HD para ${cidade}...`;
+
       try {
         const resGeo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cidade)}&count=1&language=pt&format=json`);
         const dataGeo = await resGeo.json();
+        
         if (!dataGeo.results || dataGeo.results.length === 0) {
           alert('Localidade não encontrada.');
+          reportBox.innerText = 'Erro: Localidade não encontrada na base global.';
           return;
         }
-        const { latitude, longitude, name, country } = dataGeo.results[0];
+
+        const { latitude, longitude, name, country, admin1 } = dataGeo.results[0];
         map.setView([latitude, longitude], 11);
-        const coordsElem = document.getElementById('coords-display');
-        if(coordsElem) coordsElem.innerText = `Lat: ${latitude.toFixed(4)} | Lon: ${longitude.toFixed(4)}`;
+        document.getElementById('coords-display').innerText = `Lat: ${latitude.toFixed(4)} | Lon: ${longitude.toFixed(4)}`;
 
-        const resMeteo = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,precipitation&hourly=precipitation_probability,wind_gusts_10m`);
+        const resMeteo = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,precipitation&hourly=precipitation_probability,wind_gusts_10m&timezone=auto`);
         const dataMeteo = await resMeteo.json();
-        
-        if(dataMeteo.current) {
-          document.getElementById('temp-val').innerText = `${dataMeteo.current.temperature_2m} °C`;
-          document.getElementById('wind-val').innerText = `${dataMeteo.current.wind_speed_10m} km/h`;
-          document.getElementById('press-val').innerText = `${dataMeteo.current.surface_pressure} hPa`;
-          document.getElementById('precip-val').innerText = `${dataMeteo.current.precipitation} mm`;
 
-          const reportBox = document.getElementById('ai-report');
-          reportBox.innerHTML = `
-            <strong>Local:</strong> ${name}, ${country}<br>
-            <strong>Diagnóstico Tático:</strong> Atmosfera monitorada via rede global. Índice de estabilidade dentro dos parâmetros normais. Vento em regime moderado.<br>
-            <strong>Alerta Preditivo:</strong> Sem riscos imediatos de severidade nas próximas 6 horas.
-          `;
+        const temp = dataMeteo.current.temperature_2m;
+        const hum = dataMeteo.current.relative_humidity_2m;
+        const press = dataMeteo.current.surface_pressure;
+        const wind = dataMeteo.current.wind_speed_10m;
+        const precip = dataMeteo.current.precipitation;
+        const precipProb = dataMeteo.hourly.precipitation_probability[0] || 0;
+        const windGust = dataMeteo.hourly.wind_gusts_10m[0] || wind;
+
+        document.getElementById('temp-val').innerText = `${temp} °C`;
+        document.getElementById('wind-val').innerText = `${wind} km/h (Rajada: ${windGust} km/h)`;
+        document.getElementById('press-val').innerText = `${press} hPa`;
+        document.getElementById('precip-val').innerText = `${precipProb}%`;
+
+        // Lógica de Alarme Preditivo Inteligente
+        const alertCard = document.getElementById('alert-card');
+        const riskBadge = document.getElementById('risk-badge');
+        const alertMsg = document.getElementById('alert-msg');
+
+        if (precipProb > 60 || wind > 40) {
+          alertCard.className = "glass-panel border-l-4 border-red-500 rounded-xl p-4 glow-amber transition-all";
+          riskBadge.className = "text-xs font-semibold px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 animate-pulse";
+          riskBadge.innerText = "ALERTA SEVERO";
+          alertMsg.innerText = `Atenção: Alta probabilidade de instabilidade meteorológica severa (${precipProb}% precipitação / Ventos de ${wind} km/h). Risco de rajadas fortes nas próximas 6 horas.`;
+          
+          const sound = document.getElementById('alarm-sound');
+          if(sound) sound.play().catch(e => console.log("Áudio bloqueado pelo navegador"));
+        } else {
+          alertCard.className = "glass-panel border-l-4 border-emerald-500 rounded-xl p-4 transition-all";
+          riskBadge.className = "text-xs font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800";
+          riskBadge.innerText = "Estabilidade Normal";
+          alertMsg.innerText = `Atmosfera estável em ${name}. Condições favoráveis monitoradas em tempo real via IA Ultra HD.`;
         }
+
+        // Relatório Executivo Detalhado
+        ultimoRelatorioTexto = `========================================\n` +
+          `CLIMAX BR - RELATÓRIO METEOROLÓGICO DE ELITE\n` +
+          `========================================\n` +
+          `Local: ${name} - ${admin1 || ''} (${country || 'Brasil'})\n` +
+          `Coordenadas: Lat ${latitude}, Lon ${longitude}\n` +
+          `Temperatura Atual: ${temp} °C\n` +
+          `Umidade Relativa: ${hum}%\n` +
+          `Pressão Barométrica: ${press} hPa\n` +
+          `Velocidade do Vento: ${wind} km/h (Rajadas: ${windGust} km/h)\n` +
+          `Probabilidade de Precipitação: ${precipProb}%\n` +
+          `Volume de Chuva Atual: ${precip} mm\n` +
+          `Status Preditivo: ${riskBadge.innerText}\n` +
+          `Diagnóstico: ${alertMsg.innerText}\n` +
+          `Gerado por Climax BR Ultra HD Engine em ${new Date().toLocaleString()}\n` +
+          `========================================`;
+
+        reportBox.innerHTML = `
+          <strong class="text-cyan-400">${name} (${country}):</strong><br>
+          • Temp: ${temp}°C | Umidade: ${hum}%<br>
+          • Vento: ${wind} km/h | Pressão: ${press} hPa<br>
+          • Prob. Chuva: ${precipProb}%<br>
+          <span class="text-amber-300 mt-1 block">⚡ Diagnóstico IA: ${alertMsg.innerText}</span>
+        `;
+
       } catch (err) {
         console.error(err);
+        reportBox.innerText = 'Erro ao conectar com as APIs meteorológicas. Verifique sua conexão.';
       }
     }
 
     function baixarRelatorio() {
-      const conteudo = document.getElementById('ai-report').innerText;
-      const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'relatorio_climax_br.txt';
-      link.click();
+      const blob = new Blob([ultimoRelatorioTexto], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Relatorio_Climax_BR_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
-    carregarDadosMeteorologicos("São Paulo");
+    window.onload = () => {
+      carregarDadosMeteorologicos("São Paulo");
+    };
   </script>
 </body>
 </html>
