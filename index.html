@@ -1,496 +1,178 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aetheris One | Monitoramento Meteorológico & Marítimo Avançado</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <style>
-    #map { height: 100vh; width: 100vw; z-index: 10; }
-    .leaflet-tile { filter: brightness(0.75) invert(1) contrast(2.8) hue-rotate(200deg) saturate(0.35); }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
-    .glassmorphism {
-      background: rgba(13, 17, 23, 0.90);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    #particle-canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 400;
-    }
-    @keyframes pulse-radar {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 0.4; }
-      100% { transform: scale(0.95); opacity: 0.8; }
-    }
-    .radar-pulse { animation: pulse-radar 2.5s infinite ease-in-out; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aetheris One | Radar Meteo-Marítimo + Sentinela 24/7</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<style>
+  html,body{margin:0;padding:0;height:100%;}
+  #map{position:absolute;inset:0;z-index:10;height:100vh;width:100vw;background:#09090b;}
+  #field-canvas,#particle-canvas{position:absolute;inset:0;pointer-events:none;z-index:390;}
+  #particle-canvas{z-index:400;}
+  .glass{background:rgba(9,9,14,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.09);}
+  .scroll::-webkit-scrollbar{width:4px}.scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
+  @keyframes pulse2{0%{transform:scale(.95);opacity:.85}50%{transform:scale(1.08);opacity:.45}100%{transform:scale(.95);opacity:.85}}
+  .pulse-dot{animation:pulse2 2.4s infinite ease-in-out}
+  @keyframes bannerIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .banner-in{animation:bannerIn .35s ease-out}
+  .modal-back{position:fixed;inset:0;z-index:700;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(3px)}
+  .modal-back.open{display:flex}
+  .layer-btn.active{background:rgba(8,47,73,.9)!important;border-color:rgba(34,211,238,.6)!important;color:#67e8f9!important}
+  input,select,textarea{color-scheme:dark}
+  .plan-card{cursor:pointer;transition:all .15s}
+  .plan-card.sel{border-color:#22d3ee!important;background:rgba(8,47,73,.5)}
+</style>
 </head>
-<body class="bg-black text-slate-100 overflow-hidden font-sans select-none">
+<body class="bg-black text-slate-100 overflow-hidden select-none">
 
-  <!-- MAPA E CANVAS DE VENTO SOBREPOSTO -->
-  <div id="map"></div>
-  <canvas id="particle-canvas"></canvas>
+<div id="map"></div>
+<canvas id="field-canvas"></canvas>
+<canvas id="particle-canvas"></canvas>
 
-  <!-- BARRA SUPERIOR -->
-  <header class="absolute top-4 left-4 right-4 z-[500] flex flex-wrap items-center justify-between gap-3 pointer-events-none">
-    
-    <div class="glassmorphism rounded-xl px-4 py-2.5 flex items-center gap-4 pointer-events-auto shadow-2xl">
-      <div class="flex items-center gap-2">
-        <span class="w-3 h-3 rounded-full bg-emerald-500 radar-pulse"></span>
-        <span class="font-extrabold tracking-wider bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent text-lg">AETHERIS.ONE</span>
-        <span class="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-blue-950 text-cyan-400 border border-cyan-800">Pro</span>
-      </div>
-
-      <div class="relative flex items-center">
-        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3"></i>
-        <input id="search-input" type="text" placeholder="Buscar cidade, porto ou coordenadas..." 
-               class="bg-slate-900/90 text-xs text-white pl-9 pr-8 py-2 rounded-lg border border-slate-700/60 focus:border-cyan-500 focus:outline-none w-64 transition-all">
-        <button id="search-btn" class="absolute right-2 text-slate-400 hover:text-white cursor-pointer">
-          <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
+<!-- ===== HEADER ===== -->
+<header class="absolute top-3 left-3 right-3 z-[500] flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+  <div class="glass rounded-xl px-3 py-2 flex items-center gap-3 pointer-events-auto shadow-2xl">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot"></span>
+      <span class="font-extrabold tracking-wider text-sm bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">AETHERIS.ONE</span>
     </div>
-
-    <!-- SELETOR MULTIMODELO DE IA -->
-    <div class="glassmorphism rounded-xl px-4 py-2 flex items-center gap-3 pointer-events-auto shadow-2xl">
-      <div class="flex items-center gap-2 text-xs">
-        <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
-        <span class="text-slate-400 hidden sm:inline">IA Ativa:</span>
-        <select id="ai-model-selector" class="bg-slate-900 border border-slate-700 text-cyan-300 font-medium text-xs rounded-lg px-2.5 py-1.5 focus:border-cyan-400 focus:outline-none cursor-pointer">
-          <option value="Nemotron 3 Ultra">Nemotron 3 Ultra</option>
-          <option value="ChatGPT 5.5">ChatGPT 5.5</option>
-          <option value="Claude Opus 4.8">Claude Opus 4.8</option>
-          <option value="Gemini 3.7 Flash" selected>Gemini 3.7 Flash</option>
-          <option value="DeepSeek R1">DeepSeek R1</option>
-          <option value="Llama 4 Maverick">Llama 4 Maverick</option>
-          <option value="Qwen 3.8 Max">Qwen 3.8 Max</option>
-        </select>
-      </div>
-
-      <button id="trigger-ai-analysis" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg shadow-cyan-900/40 transition active:scale-95 cursor-pointer">
-        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-        <span>Gerar Laudo</span>
-      </button>
-    </div>
-
-    <!-- STATUS E CHECKOUT -->
-    <div class="glassmorphism rounded-xl px-3 py-2 flex items-center gap-3 pointer-events-auto shadow-2xl">
-      <div class="flex items-center gap-2 text-xs">
-        <span class="relative flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-        </span>
-        <span class="font-mono text-emerald-400 font-semibold" id="sentinel-badge">SENTINEL ATIVO</span>
-      </div>
-
-      <div class="h-4 w-px bg-slate-700"></div>
-
-      <button id="open-billing-modal" class="text-xs bg-amber-500/25 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer">
-        <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
-        <span>Checkout</span>
-      </button>
-
-      <button id="toggle-admin-btn" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer" title="Painel Administrativo">
-        <i data-lucide="shield-check" class="w-4 h-4"></i>
-      </button>
-    </div>
-  </header>
-
-  <!-- PAINEL LATERAL DE CAMADAS E TELEMETRIA -->
-  <aside class="absolute left-4 top-20 bottom-24 z-[500] w-72 flex flex-col gap-3 pointer-events-none">
-    
-    <!-- CAMADAS INTERATIVAS (TOTALMENTE FUNCIONAIS) -->
-    <div class="glassmorphism rounded-xl p-3.5 pointer-events-auto flex flex-col gap-2 shadow-xl">
-      <div class="text-[11px] font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
-        <span>Camadas Interativas</span>
-        <i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-400"></i>
-      </div>
-      
-      <div class="grid grid-cols-2 gap-1.5 text-xs" id="layers-container">
-        <button type="button" class="layer-btn active flex items-center gap-2 p-2 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-medium transition cursor-pointer" data-layer="wind">
-          <i data-lucide="wind" class="w-3.5 h-3.5"></i> Vento Partículas
-        </button>
-        <button type="button" class="layer-btn flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-slate-300 font-medium hover:bg-slate-800 transition cursor-pointer" data-layer="waves">
-          <i data-lucide="waves" class="w-3.5 h-3.5"></i> Ondas & Maré
-        </button>
-        <button type="button" class="layer-btn flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-slate-300 font-medium hover:bg-slate-800 transition cursor-pointer" data-layer="temp">
-          <i data-lucide="thermometer" class="w-3.5 h-3.5"></i> Temperatura
-        </button>
-        <button type="button" class="layer-btn flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-slate-300 font-medium hover:bg-slate-800 transition cursor-pointer" data-layer="pressure">
-          <i data-lucide="gauge" class="w-3.5 h-3.5"></i> Pressão Barom.
-        </button>
-      </div>
-    </div>
-
-    <!-- TELEMETRIA DO PONTO -->
-    <div class="glassmorphism rounded-xl p-4 pointer-events-auto flex-1 flex flex-col overflow-hidden shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-        <div>
-          <h3 id="location-name" class="font-bold text-sm text-white">Carregando Posição...</h3>
-          <p id="location-coords" class="text-[10px] font-mono text-cyan-400/80">-22.9068° S, -43.1729° W</p>
-        </div>
-        <span id="station-status" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">ONLINE</span>
-      </div>
-
-      <div class="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-1">
-        <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span class="flex items-center gap-1.5"><i data-lucide="wind" class="w-3.5 h-3.5 text-cyan-400"></i> Vento Superficial</span>
-            <span id="wind-dir-badge" class="font-mono text-[11px] text-cyan-300">--</span>
-          </div>
-          <div class="flex items-baseline gap-2">
-            <span id="wind-speed" class="text-2xl font-black text-white font-mono">--</span>
-            <span class="text-xs text-slate-400">km/h</span>
-            <span id="wind-gusts" class="text-xs text-amber-400 ml-auto font-mono">Rajadas: --</span>
-          </div>
-        </div>
-
-        <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span class="flex items-center gap-1.5"><i data-lucide="activity" class="w-3.5 h-3.5 text-blue-400"></i> Ondas & Maré</span>
-            <span class="font-mono text-[10px] text-blue-300">Metros</span>
-          </div>
-          <div class="flex items-baseline gap-2">
-            <span id="wave-height" class="text-2xl font-black text-cyan-400 font-mono">--</span>
-            <span class="text-xs text-slate-400">m</span>
-            <span id="wave-period" class="text-xs text-slate-300 ml-auto font-mono">Período: --s</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
-            <div class="text-[10px] text-slate-400">Temperatura</div>
-            <div class="flex items-baseline gap-1 mt-0.5">
-              <span id="air-temp" class="text-xl font-bold text-white font-mono">--</span>
-              <span class="text-xs text-slate-400">°C</span>
-            </div>
-          </div>
-          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
-            <div class="text-[10px] text-slate-400">Pressão</div>
-            <div class="flex items-baseline gap-1 mt-0.5">
-              <span id="air-pressure" class="text-xl font-bold text-white font-mono">--</span>
-              <span class="text-xs text-slate-400">hPa</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- SINAL DE ALERTA ANTECIPADO (PRÉ-DEFESA CIVIL SEM DELAY) -->
-        <div id="sentinel-alert-box" class="p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-xs transition-all">
-          <div class="font-bold text-emerald-400 flex items-center gap-1.5 mb-1">
-            <i data-lucide="shield-alert" class="w-4 h-4"></i>
-            <span>Sentinela Preventivo (Pré-Defesa Civil)</span>
-          </div>
-          <p id="sentinel-diag" class="text-slate-300 text-[11px] leading-relaxed">Varredura contínua ativa. Nenhum risco severo iminente no setor monitorado.</p>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- MODAL DE LAUDO PREDITIVO (CORRIGIDO E FUNCIONAL) -->
-  <div id="ai-modal" class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="glassmorphism rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-cyan-500/30">
-      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
-        <div class="flex items-center gap-2.5">
-          <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i>
-          <h3 id="ai-modal-title" class="font-bold text-white text-base">Laudo Executivo Preditivo</h3>
-        </div>
-        <button id="close-ai-modal" class="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <div id="ai-modal-body" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-sm text-slate-300">
-        <div class="flex items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
-          <span class="ml-3 text-slate-400">Sintetizando dados e gerando análise com IA...</span>
-        </div>
-      </div>
-      <div class="px-6 py-3 border-t border-slate-800 bg-slate-900/80 flex justify-end gap-3">
-        <button id="copy-ai-report" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition cursor-pointer">
-          <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Laudo
-        </button>
-      </div>
+    <div class="relative flex items-center">
+      <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5"></i>
+      <input id="search-input" type="text" placeholder="Cidade, porto ou coordenadas..." class="bg-zinc-900/90 text-xs text-white pl-8 pr-8 py-1.5 rounded-lg border border-zinc-700/60 focus:border-cyan-500 focus:outline-none w-52 md:w-64">
+      <button id="search-btn" class="absolute right-2 text-slate-400 hover:text-white cursor-pointer"><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
     </div>
   </div>
 
-  <!-- MODAL DE CHECKOUT -->
-  <div id="billing-modal" class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="glassmorphism rounded-2xl w-full max-w-md p-6 flex flex-col shadow-2xl border border-amber-500/30 relative">
-      <button id="close-billing-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-      <div class="flex items-center gap-2 mb-4">
-        <i data-lucide="credit-card" class="w-6 h-6 text-amber-400"></i>
-        <h3 class="font-bold text-white text-lg">Assinatura Corporativa</h3>
-      </div>
-      <p class="text-xs text-slate-300 mb-6 leading-relaxed">
-        Desbloqueie acesso ilimitado ao motor Sentinel, laudos executivos avançados e múltiplos nós de IA.
-      </p>
-      <div class="space-y-3 mb-6">
-        <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700/80 cursor-pointer hover:border-amber-500/50 transition">
-          <div class="flex items-center gap-3">
-            <input type="radio" name="gateway" value="stripe" checked class="text-amber-500 focus:ring-amber-500">
-            <div>
-              <div class="text-sm font-bold text-white">Stripe Checkout</div>
-              <div class="text-[11px] text-slate-400">Cartão de Crédito / USD</div>
-            </div>
-          </div>
-          <span class="text-xs font-mono text-amber-400">$49/mês</span>
-        </label>
-        <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700/80 cursor-pointer hover:border-amber-500/50 transition">
-          <div class="flex items-center gap-3">
-            <input type="radio" name="gateway" value="abacatepay" class="text-amber-500 focus:ring-amber-500">
-            <div>
-              <div class="text-sm font-bold text-white">AbacatePay / PIX</div>
-              <div class="text-[11px] text-slate-400">Instantâneo Brasil</div>
-            </div>
-          </div>
-          <span class="text-xs font-mono text-amber-400">R$ 249/mês</span>
-        </label>
-      </div>
-      <button id="proceed-checkout" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold py-3 rounded-xl shadow-lg shadow-amber-500/20 transition active:scale-95 text-sm cursor-pointer">
-        Iniciar Assinatura Segura
-      </button>
-    </div>
+  <div class="glass rounded-xl px-3 py-2 flex items-center gap-2 pointer-events-auto shadow-2xl">
+    <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+    <select id="ai-model-selector" class="bg-zinc-900 border border-zinc-700 text-cyan-300 text-xs rounded-lg px-2 py-1.5 focus:border-cyan-400 focus:outline-none cursor-pointer">
+      <option value="Nemotron 3 Ultra">Nemotron 3 Ultra</option>
+      <option value="ChatGPT 5.5">ChatGPT 5.5</option>
+      <option value="Claude Opus 4.8">Claude Opus 4.8</option>
+      <option value="Gemini 3.7 Flash" selected>Gemini 3.7 Flash</option>
+      <option value="DeepSeek R1">DeepSeek R1</option>
+      <option value="Llama 4 Maverick">Llama 4 Maverick</option>
+      <option value="Qwen 3.8 Max">Qwen 3.8 Max</option>
+    </select>
+    <button id="trigger-ai-analysis" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg shadow-cyan-900/40 active:scale-95 cursor-pointer">
+      <i data-lucide="sparkles" class="w-3.5 h-3.5"></i><span>Gerar Laudo</span>
+    </button>
   </div>
 
-  <!-- MODAL ADMIN -->
-  <div id="admin-modal" class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="glassmorphism rounded-2xl w-full max-w-xl p-6 flex flex-col shadow-2xl border border-cyan-500/30 relative">
-      <button id="close-admin-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-      <div class="flex items-center gap-2 mb-4">
-        <i data-lucide="shield-check" class="w-6 h-6 text-cyan-400"></i>
-        <h3 class="font-bold text-white text-lg">Painel Administrativo & Afiliados</h3>
+  <div class="glass rounded-xl px-3 py-2 flex items-center gap-2.5 pointer-events-auto shadow-2xl">
+    <div class="flex items-center gap-2">
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+      <span class="font-mono text-emerald-400 text-xs font-semibold" id="sentinel-badge">SENTINEL 24/7</span>
+    </div>
+    <div class="h-4 w-px bg-zinc-700"></div>
+    <button id="open-billing-modal" class="text-xs bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer">
+      <i data-lucide="credit-card" class="w-3.5 h-3.5"></i><span>Checkout</span>
+    </button>
+    <button id="toggle-admin-btn" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer" title="Painel Admin"><i data-lucide="shield-check" class="w-4 h-4"></i></button>
+  </div>
+</header>
+
+<!-- ===== BANNER DE ALERTA ANTECIPADO ===== -->
+<div id="alert-banner" class="hidden absolute top-16 left-1/2 -translate-x-1/2 z-[600] w-[min(92vw,560px)] rounded-xl border-2 p-3 shadow-2xl banner-in" style="background:rgba(20,10,10,.94)">
+  <div class="flex items-start gap-2.5">
+    <i data-lucide="siren" class="w-5 h-5 mt-0.5 shrink-0"></i>
+    <div class="flex-1 min-w-0">
+      <p id="alert-banner-title" class="font-extrabold text-sm tracking-wide"></p>
+      <p id="alert-banner-msg" class="text-xs text-slate-200 mt-0.5 leading-relaxed"></p>
+      <p class="text-[10px] text-slate-400 mt-1 font-mono">Sinal antecipado do Sentinela — pode preceder o aviso oficial da Defesa Civil.</p>
+    </div>
+    <button id="alert-banner-close" class="text-slate-400 hover:text-white cursor-pointer shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="absolute left-3 top-[72px] bottom-5 z-[500] w-[280px] flex flex-col gap-2.5 pointer-events-none max-sm:w-[calc(100vw-24px)]">
+  <div class="glass rounded-xl p-3 pointer-events-auto shadow-xl">
+    <p class="text-[10px] font-bold tracking-widest text-slate-400 uppercase flex items-center justify-between mb-2"><span>Camadas</span><i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-400"></i></p>
+    <div class="grid grid-cols-2 gap-1.5 text-[11px]" id="layers-container">
+      <button type="button" class="layer-btn active flex items-center gap-1.5 p-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-slate-300 font-medium cursor-pointer" data-layer="wind"><i data-lucide="wind" class="w-3.5 h-3.5"></i>Vento</button>
+      <button type="button" class="layer-btn flex items-center gap-1.5 p-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-slate-300 font-medium cursor-pointer" data-layer="waves"><i data-lucide="waves" class="w-3.5 h-3.5"></i>Ondas</button>
+      <button type="button" class="layer-btn flex items-center gap-1.5 p-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-slate-300 font-medium cursor-pointer" data-layer="temp"><i data-lucide="thermometer" class="w-3.5 h-3.5"></i>Temperatura</button>
+      <button type="button" class="layer-btn flex items-center gap-1.5 p-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-slate-300 font-medium cursor-pointer" data-layer="pressure"><i data-lucide="gauge" class="w-3.5 h-3.5"></i>Pressão</button>
+    </div>
+    <div id="layer-legend" class="mt-2 text-[10px] text-slate-400 font-mono"></div>
+  </div>
+
+  <div class="glass rounded-xl p-3.5 pointer-events-auto flex-1 flex flex-col overflow-hidden shadow-xl">
+    <div class="flex items-center justify-between border-b border-zinc-800 pb-2 mb-2.5">
+      <div class="min-w-0">
+        <h3 id="location-name" class="font-bold text-sm text-white truncate">São Paulo, SP</h3>
+        <p id="location-coords" class="text-[10px] font-mono text-cyan-400/80">-23.5505, -46.6333</p>
       </div>
-      <div class="space-y-4 text-xs text-slate-300">
-        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
-          <div class="font-bold text-white mb-1">Link de Afiliado Exclusivo</div>
-          <div class="flex items-center gap-2 mt-2">
-            <input type="text" readonly value="https://aetheris.one/?ref=partner_master" class="bg-slate-950 text-cyan-300 font-mono text-xs px-3 py-2 rounded-lg flex-1 border border-slate-800 focus:outline-none">
-            <button onclick="alert('Link copiado!')" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg font-semibold transition cursor-pointer">Copiar</button>
-          </div>
+      <span id="station-status" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">ONLINE</span>
+    </div>
+
+    <div class="space-y-2 overflow-y-auto scroll flex-1 pr-1">
+      <div class="bg-zinc-900/70 p-2.5 rounded-lg border border-zinc-800/80">
+        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+          <span class="flex items-center gap-1.5"><i data-lucide="wind" class="w-3.5 h-3.5 text-cyan-400"></i>Vento</span>
+          <span id="wind-dir-badge" class="font-mono text-[10px] text-cyan-300">--</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="wind-speed" class="text-2xl font-black text-white font-mono">--</span><span class="text-[11px] text-slate-400">km/h</span>
+          <span id="wind-gusts" class="text-[11px] text-amber-400 ml-auto font-mono">Raj: --</span>
         </div>
       </div>
+      <div class="bg-zinc-900/70 p-2.5 rounded-lg border border-zinc-800/80">
+        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+          <span class="flex items-center gap-1.5"><i data-lucide="activity" class="w-3.5 h-3.5 text-blue-400"></i>Ondas</span>
+          <span id="wave-note" class="font-mono text-[9px] text-blue-300">marítimo</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="wave-height" class="text-2xl font-black text-cyan-400 font-mono">--</span><span class="text-[11px] text-slate-400">m</span>
+          <span id="wave-period" class="text-[11px] text-slate-300 ml-auto font-mono">Per: --s</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="bg-zinc-900/70 p-2.5 rounded-lg border border-zinc-800/80">
+          <div class="text-[10px] text-slate-400">Temperatura</div>
+          <div class="flex items-baseline gap-1 mt-0.5"><span id="air-temp" class="text-lg font-bold font-mono">--</span><span class="text-[10px] text-slate-400">°C</span></div>
+        </div>
+        <div class="bg-zinc-900/70 p-2.5 rounded-lg border border-zinc-800/80">
+          <div class="text-[10px] text-slate-400">Pressão</div>
+          <div class="flex items-baseline gap-1 mt-0.5"><span id="air-pressure" class="text-lg font-bold font-mono">--</span><span class="text-[10px] text-slate-400">hPa</span></div>
+        </div>
+      </div>
+
+      <!-- SINAL PRÉ-DEFESA CIVIL + NOTIFICAÇÕES -->
+      <div id="sentinel-alert-box" class="p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20">
+        <div class="font-bold text-emerald-400 flex items-center gap-1.5 mb-1 text-xs">
+          <i data-lucide="shield-alert" class="w-4 h-4"></i><span>Sentinela Preventivo</span>
+        </div>
+        <p id="sentinel-diag" class="text-slate-300 text-[11px] leading-relaxed">Varredura contínua ativa. Nenhum risco severo iminente.</p>
+        <button id="enable-alerts-btn" class="mt-2 w-full text-[11px] font-bold px-2 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40 transition cursor-pointer">🔔 Ativar Alertas no Dispositivo</button>
+      </div>
     </div>
   </div>
+</aside>
 
-  <script>
-    lucide.createIcons();
+<!-- ===== MODAL LAUDO ===== -->
+<div id="report-modal" class="modal-back">
+  <div class="glass rounded-2xl w-[min(94vw,720px)] max-h-[86vh] flex flex-col shadow-2xl">
+    <div class="flex items-center justify-between p-4 border-b border-zinc-800">
+      <div class="flex items-center gap-2 min-w-0">
+        <i data-lucide="file-text" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+        <div class="min-w-0">
+          <h3 class="font-bold text-sm">Laudo Técnico Preditivo</h3>
+          <p id="report-title-point" class="text-[10px] font-mono text-cyan-400/80 truncate"></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="report-copy" class="text-[11px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 cursor-pointer">Copiar</button>
+        <button id="report-export" class="text-[11px] px-2 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer">Exportar</button>
+        <button id="report-close" class="p-1.5 text-slate-400 hover:text-white 
 
-    // Mapa Leaflet
-    const map = L.map('map', { zoomControl: false }).setView([-22.9068, -43.1729], 6);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
-
-    // Canvas Partículas Vento
-    const canvas = document.getElementById('particle-canvas');
-    const ctx = canvas.getContext('2d');
-
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    const particles = [];
-    let currentWindSpeed = 25;
-    for (let i = 0; i < 700; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        speed: Math.random() * 2 + 1,
-        angle: Math.random() * Math.PI * 2,
-        life: Math.random() * 100 + 50
-      });
-    }
-
-    function animateParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
-      ctx.lineWidth = 1.2;
-
-      particles.forEach(p => {
-        p.x += Math.cos(p.angle) * (p.speed * (currentWindSpeed / 15));
-        p.y += Math.sin(p.angle) * (p.speed * (currentWindSpeed / 15));
-        p.life--;
-
-        if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height || p.life <= 0) {
-          p.x = Math.random() * canvas.width;
-          p.y = Math.random() * canvas.height;
-          p.life = Math.random() * 100 + 50;
-        }
-
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x - Math.cos(p.angle) * 8, p.y - Math.sin(p.angle) * 8);
-        ctx.stroke();
-      });
-      requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-
-    // Interatividade dos Botões de Camadas (Eliminando Estado Estático)
-    const layerButtons = document.querySelectorAll('.layer-btn');
-    layerButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        layerButtons.forEach(b => {
-          b.classList.remove('active', 'bg-cyan-950/80', 'border-cyan-500/50', 'text-cyan-300');
-          b.classList.add('bg-slate-900/60', 'border-slate-700/50', 'text-slate-300');
-        });
-        btn.classList.add('active', 'bg-cyan-950/80', 'border-cyan-500/50', 'text-cyan-300');
-        btn.classList.remove('bg-slate-900/60', 'border-slate-700/50', 'text-slate-300');
-        
-        const activeLayer = btn.getAttribute('data-layer');
-        console.log('Camada ativa:', activeLayer);
-      });
-    });
-
-    // Telemetria e Alerta Antecipado Sentinel 24/7 (Sem Delay)
-    async function fetchWeatherData(lat, lon, locationName) {
-      document.getElementById('location-name').innerText = locationName;
-      document.getElementById('location-coords').innerText = `${lat.toFixed(4)}° S, ${lon.toFixed(4)}° W`;
-      document.getElementById('station-status').innerText = 'SINCRONIZANDO';
-
-      try {
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m`);
-        const weatherData = await weatherRes.json();
-
-        let waveHeight = '1.2';
-        let wavePeriod = '6.5';
-        try {
-          const marineRes = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_period`);
-          const marineData = await marineRes.json();
-          if (marineData.current) {
-            waveHeight = marineData.current.wave_height ?? '1.2';
-            wavePeriod = marineData.current.wave_period ?? '6.5';
-          }
-        } catch (e) {}
-
-        const cur = weatherData.current;
-        currentWindSpeed = cur.wind_speed_10m;
-
-        document.getElementById('wind-speed').innerText = cur.wind_speed_10m;
-        document.getElementById('wind-gusts').innerText = `Rajadas: ${cur.wind_gusts_10m ?? cur.wind_speed_10m} km/h`;
-        document.getElementById('wind-dir-badge').innerText = `${cur.wind_direction_10m}°`;
-        
-        document.getElementById('wave-height').innerText = waveHeight;
-        document.getElementById('wave-period').innerText = `Período: ${wavePeriod}s`;
-
-        document.getElementById('air-temp').innerText = cur.temperature_2m;
-        document.getElementById('air-pressure').innerText = cur.surface_pressure;
-        document.getElementById('station-status').innerText = 'ONLINE';
-
-        // Lógica do Sinal de Alerta Antecipado (Pré-Defesa Civil) SEM DELAY
-        const windGust = cur.wind_gusts_10m ?? cur.wind_speed_10m;
-        const waveH = parseFloat(waveHeight);
-        const alertBox = document.getElementById('sentinel-alert-box');
-        const alertDiag = document.getElementById('sentinel-diag');
-
-        if (windGust > 45 || waveH > 2.5) {
-          alertBox.className = 'p-2.5 rounded-lg border border-red-500/60 bg-red-950/30 text-xs transition-all';
-          alertDiag.innerHTML = `<strong class="text-red-400">ALERTA ANTECIPADO (DEFESA CIVIL / SENTINEL):</strong> Risco severo detectado (Rajadas: ${windGust} km/h | Ondas: ${waveH}m). Aviso preventivo gerado instantaneamente.`;
-        } else if (windGust > 30 || waveH > 1.8) {
-          alertBox.className = 'p-2.5 rounded-lg border border-amber-500/50 bg-amber-950/25 text-xs transition-all';
-          alertDiag.innerHTML = `<strong class="text-amber-400">ATENÇÃO PREVENTIVA:</strong> Elevação de parâmetros observada (Rajadas: ${windGust} km/h). Monitoramento contínuo em curso.`;
-        } else {
-          alertBox.className = 'p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-xs transition-all';
-          alertDiag.innerText = 'Varredura contínua ativa. Parâmetros normais de navegação e operação.';
-        }
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById('station-status').innerText = 'ERRO REDE';
-      }
-    }
-
-    map.on('click', (e) => {
-      fetchWeatherData(e.latlng.lat, e.latlng.lng, 'Ponto Selecionado');
-    });
-
-    // Busca
-    document.getElementById('search-btn').addEventListener('click', performSearch);
-    document.getElementById('search-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-
-    async function performSearch() {
-      const query = document.getElementById('search-input').value;
-      if (!query) return;
-      try {
-        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1`);
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
-          const loc = data.results[0];
-          map.setView([loc.latitude, loc.longitude], 10);
-          fetchWeatherData(loc.latitude, loc.longitude, `${loc.name}, ${loc.country ?? ''}`);
-        } else {
-          alert('Localidade não encontrada.');
-        }
-      } catch (e) {}
-    }
-
-    fetchWeatherData(-22.9068, -43.1729, 'Rio de Janeiro, Brasil');
-
-    // Modais (Laudo IA Funcional)
-    const aiModal = document.getElementById('ai-modal');
-    document.getElementById('trigger-ai-analysis').addEventListener('click', () => {
-      aiModal.classList.remove('hidden');
-      const selectedModel = document.getElementById('ai-model-selector').value;
-      document.getElementById('ai-modal-title').innerText = `Laudo Executivo — ${selectedModel}`;
-      
-      const speed = document.getElementById('wind-speed').innerText;
-      const wave = document.getElementById('wave-height').innerText;
-      const temp = document.getElementById('air-temp').innerText;
-      const loc = document.getElementById('location-name').innerText;
-
-      setTimeout(() => {
-        document.getElementById('ai-modal-body').innerHTML = `
-          <div class="space-y-3">
-            <div class="p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/60">
-              <div class="font-bold text-cyan-400 mb-1">Sumário Preditivo (${selectedModel})</div>
-              <p class="text-xs text-slate-200 leading-relaxed">Para a localidade de <strong>${loc}</strong>, os registros atuais indicam vento de ${speed} km/h, altura de ondas em ${wave} metros e temperatura de ${temp}°C.</p>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
-              <div class="font-bold text-white mb-1">Recomendações Operacionais & Sentinel</div>
-              <ul class="list-disc list-inside text-xs text-slate-300 space-y-1">
-                <li>Janela de operação segura avaliada em tempo real pelo motor Sentinel 24/7.</li>
-                <li>Conformidade com os padrões de previsibilidade meteorológica de alta precisão.</li>
-                <li>Ausência de restrições críticas imediatas no setor atual.</li>
-              </ul>
-            </div>
-          </div>
-        `;
-      }, 600);
-    });
-
-    document.getElementById('close-ai-modal').addEventListener('click', () => aiModal.classList.add('hidden'));
-    document.getElementById('copy-ai-report').addEventListener('click', () => alert('Laudo copiado para a área de transferência!'));
-
-    const billingModal = document.getElementById('billing-modal');
-    document.getElementById('open-billing-modal').addEventListener('click', () => billingModal.classList.remove('hidden'));
-    document.getElementById('close-billing-modal').addEventListener('click', () => billingModal.classList.add('hidden'));
-    document.getElementById('proceed-checkout').addEventListener('click', () => {
-      alert('Redirecionando para o ambiente seguro de pagamento...');
-      billingModal.classList.add('hidden');
-    });
-
-    const adminModal = document.getElementById('admin-modal');
-    document.getElementById('toggle-admin-btn').addEventListener('click', () => adminModal.classList.remove('hidden'));
-    document.getElementById('close-admin-modal').addEventListener('click', () => adminModal.classList.add('hidden'));
-  </script>
-</body>
-</html>
+_A resposta foi interrompida. Verifique esta conversa antes de tentar novamente._
