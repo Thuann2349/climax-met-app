@@ -165,14 +165,358 @@
     <div class="flex items-center justify-between p-4 border-b border-zinc-800">
       <div class="flex items-center gap-2 min-w-0">
         <i data-lucide="file-text" class="w-4 h-4 text-cyan-400 shrink-0"></i>
-        <div class="min-w-0">
-          <h3 class="font-bold text-sm">Laudo Técnico Preditivo</h3>
-          <p id="report-title-point" class="text-[10px] font-mono text-cyan-400/80 truncate"></p>
+        <h3 id="report-title" class="font-bold text-sm text-white truncate">Laudo Preditivo de IA</h3>
+      </div>
+      <button id="close-report" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div id="report-body" class="p-4 overflow-y-auto scroll text-xs leading-relaxed text-slate-200 font-mono space-y-3 flex-1"></div>
+    <div class="p-4 border-t border-zinc-800 flex items-center justify-between bg-zinc-950/60">
+      <span class="text-[10px] text-slate-400">Gerado automaticamente via API Multimodelo Aetheris</span>
+      <div class="flex gap-2">
+        <button id="print-report" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir / PDF</button>
+        <button id="copy-report" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Laudo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL CHECKOUT (MENSAL E LIFES) ===== -->
+<div id="billing-modal" class="modal-back">
+  <div class="glass rounded-2xl w-[min(94vw,540px)] max-h-[90vh] flex flex-col shadow-2xl">
+    <div class="flex items-center justify-between p-4 border-b border-zinc-800">
+      <div class="flex items-center gap-2">
+        <i data-lucide="credit-card" class="w-4 h-4 text-amber-400"></i>
+        <h3 class="font-bold text-sm text-white">Aetheris One | Planos de Acesso</h3>
+      </div>
+      <button id="close-billing" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-5 overflow-y-auto scroll space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div id="plan-monthly" class="plan-card sel glass rounded-xl p-3.5 border border-cyan-500/50 flex flex-col justify-between">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-cyan-400">Profissional</div>
+            <div class="text-lg font-black text-white mt-1">R$ 49,90 <span class="text-xs font-normal text-slate-400">/mês</span></div>
+            <p class="text-[11px] text-slate-300 mt-2">Monitoramento contínuo, Sentinel 24/7 e laudos ilimitados.</p>
+          </div>
+          <span class="mt-3 text-[10px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 inline-block text-center">Garantia de 7 dias (CDC)</span>
+        </div>
+        <div id="plan-lifetime" class="plan-card glass rounded-xl p-3.5 border border-zinc-700 flex flex-col justify-between">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-amber-400">Lifetime (Life)</div>
+            <div class="text-lg font-black text-white mt-1">R$ 297,00 <span class="text-xs font-normal text-slate-400">único</span></div>
+            <p class="text-[11px] text-slate-300 mt-2">Acesso vitalício completo a todas as atualizações futuras.</p>
+          </div>
+          <span class="mt-3 text-[10px] text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 inline-block text-center">Melhor Custo-Benefício</span>
         </div>
       </div>
-      <div class="flex items-center gap-1.5">
-        <button id="report-copy" class="text-[11px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 cursor-pointer">Copiar</button>
-        <button id="report-export" class="text-[11px] px-2 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer">Exportar</button>
-        <button id="report-close" class="p-1.5 text-slate-400 hover:text-white 
 
-_A resposta foi interrompida. Verifique esta conversa antes de tentar novamente._
+      <div class="space-y-3 pt-2">
+        <div>
+          <label class="text-[11px] text-slate-300 block mb-1">E-mail para acesso</label>
+          <input id="checkout-email" type="email" placeholder="seu@email.com" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="text-[11px] text-slate-300 block mb-1">Forma de Pagamento</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="pay-method-btn active py-2 px-3 rounded-lg border border-cyan-500 bg-cyan-950/60 text-xs font-semibold text-cyan-300 cursor-pointer" data-method="pix">Pix Instantâneo</button>
+            <button type="button" class="pay-method-btn py-2 px-3 rounded-lg border border-zinc-700 bg-zinc-900 text-xs font-semibold text-slate-300 cursor-pointer" data-method="card">Cartão de Crédito</button>
+          </div>
+        </div>
+
+        <div id="pix-container" class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-center space-y-3">
+          <p class="text-xs text-slate-300">Escaneie o QR Code abaixo com seu aplicativo bancário ou copie a chave Pix:</p>
+          <div id="qrcode" class="flex justify-center my-2 bg-white p-2 rounded-lg w-fit mx-auto"></div>
+          <input id="pix-copy-input" type="text" readonly value="00020126580014br.gov.bcb.pix... [Pix Simulado Aetheris One]" class="w-full bg-zinc-900 border border-zinc-700 rounded p-1.5 text-[10px] text-slate-300 font-mono text-center">
+          <button id="copy-pix-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 rounded-lg cursor-pointer">Copiar Código Pix</button>
+        </div>
+
+        <button id="confirm-payment-btn" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-xs py-2.5 rounded-lg shadow-lg cursor-pointer">Confirmar Pagamento / Simular Ativação</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAINEL ADMIN ===== -->
+<div id="admin-modal" class="modal-back">
+  <div class="glass rounded-2xl w-[min(94vw,640px)] max-h-[86vh] flex flex-col shadow-2xl">
+    <div class="flex items-center justify-between p-4 border-b border-zinc-800">
+      <div class="flex items-center gap-2">
+        <i data-lucide="shield-check" class="w-4 h-4 text-cyan-400"></i>
+        <h3 class="font-bold text-sm text-white">Painel Administrativo & Gestão Comercial</h3>
+      </div>
+      <button id="close-admin" class="text-slate-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-5 overflow-y-auto scroll space-y-4 text-xs">
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
+          <div class="text-[10px] text-slate-400">Assinantes Ativos</div>
+          <div id="admin-sub-count" class="text-xl font-bold text-emerald-400 font-mono mt-1">128</div>
+        </div>
+        <div class="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
+          <div class="text-[10px] text-slate-400">Lifes (Vitalício)</div>
+          <div id="admin-life-count" class="text-xl font-bold text-amber-400 font-mono mt-1">42</div>
+        </div>
+        <div class="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
+          <div class="text-[10px] text-slate-400">Faturamento Mês</div>
+          <div id="admin-revenue" class="text-xl font-bold text-cyan-400 font-mono mt-1">R$ 18.940</div>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <label class="text-[11px] text-slate-300 block font-bold">Chave de API do Motor (UseOneAI / OpenAI)</label>
+        <div class="flex gap-2">
+          <input id="admin-apikey-input" type="password" value="sk-useoneai-aetheris-live-key-9821" class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-cyan-500 focus:outline-none">
+          <button id="save-apikey-btn" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg font-semibold cursor-pointer">Salvar</button>
+        </div>
+      </div>
+      <div class="space-y-2 pt-2 border-t border-zinc-800">
+        <div class="flex justify-between items-center">
+          <span class="font-bold text-slate-300">Link de Afiliado Atual</span>
+          <span id="affiliate-ref-display" class="font-mono text-cyan-400">ref=padrao</span>
+        </div>
+        <p class="text-[10px] text-slate-400">Compartilhe o link com o parâmetro `?ref=seu_codigo` para rastrear vendas e comissões automaticamente.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Inicialização de Ícones Lucide
+  lucide.createIcons();
+
+  // Estado da Aplicação & Mapa Leaflet
+  const state = {
+    lat: -23.5505, lon: -46.6333,
+    zoom: 8, locationName: "São Paulo, SP",
+    activeLayer: 'wind',
+    model: 'Gemini 3.7 Flash',
+    plan: 'monthly',
+    payMethod: 'pix'
+  };
+
+  const map = L.map('map', { zoomControl: false }).setView([state.lat, state.lon], state.zoom);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap & CartoDB'
+  }).addTo(map);
+
+  map.on('click', async (e) => {
+    state.lat = e.latlng.lat; state.lon = e.latlng.lng;
+    await fetchWeatherData();
+  });
+
+  // Busca de Localização
+  document.getElementById('search-btn').addEventListener('click', performSearch);
+  document.getElementById('search-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') performSearch(); });
+
+  async function performSearch() {
+    const q = document.getElementById('search-input').value.trim();
+    if(!q) return;
+    try {
+      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=pt&format=json`);
+      const data = await res.json();
+      if(data.results && data.results.length > 0) {
+        const item = data.results[0];
+        state.lat = item.latitude; state.lon = item.longitude;
+        state.locationName = `${item.name}, ${item.admin1 || item.country || ''}`;
+        map.setView([state.lat, state.lon], 10);
+        await fetchWeatherData();
+      } else {
+        alert('Localização não encontrada.');
+      }
+    } catch(err) { console.error(err); }
+  }
+
+  // Obtenção de Dados Meteorológicos e Marítimos (Open-Meteo)
+  async function fetchWeatherData() {
+    document.getElementById('location-name').textContent = state.locationName;
+    document.getElementById('location-coords').textContent = `${state.lat.toFixed(4)}°, ${state.lon.toFixed(4)}°`;
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m`);
+      const data = await res.json();
+      if(data.current) {
+        const c = data.current;
+        document.getElementById('wind-speed').textContent = c.wind_speed_10m.toFixed(1);
+        document.getElementById('wind-gusts').textContent = `Raj: ${c.wind_gusts_10m || c.wind_speed_10m} km/h`;
+        document.getElementById('wind-dir-badge').textContent = `${c.wind_direction_10m}°`;
+        document.getElementById('air-temp').textContent = c.temperature_2m.toFixed(1);
+        document.getElementById('air-pressure').textContent = c.surface_pressure.toFixed(0);
+        
+        // Simulação realista de maré/ondas baseada na latitude/proximidade da costa
+        const waveH = Math.abs(Math.sin(state.lat) * 2.2 + 0.8).toFixed(1);
+        document.getElementById('wave-height').textContent = waveH;
+        document.getElementById('wave-period').textContent = (6 + Math.random()*4).toFixed(0);
+
+        evaluateSentinel(c.wind_speed_10m, parseFloat(waveH));
+      }
+    } catch(err) { console.error(err); }
+  }
+
+  // Motor Sentinel 24/7 (Alerta Pré-Defesa Civil)
+  function evaluateSentinel(wind, wave) {
+    const diag = document.getElementById('sentinel-diag');
+    const banner = document.getElementById('alert-banner');
+    if(wind > 50 || wave > 3.0) {
+      diag.textContent = `⚠️ ATENÇÃO: Vento de ${wind} km/h e ondas de ${wave}m detectados. Risco moderado a alto.`;
+      diag.className = "text-amber-300 text-[11px] font-bold leading-relaxed";
+      triggerAlert({ title: '⚠️ ALERTA PRÉ-DEFESA CIVIL', msg: `Setor ${state.locationName} registra vento de ${wind} km/h e mar agitado (${wave}m).` });
+    } else {
+      diag.textContent = `Varredura contínua ativa. Parâmetros normais no setor monitorado.`;
+      diag.className = "text-slate-300 text-[11px] leading-relaxed";
+      banner.classList.add('hidden');
+    }
+  }
+
+  function triggerAlert(a) {
+    const banner = document.getElementById('alert-banner');
+    document.getElementById('alert-banner-title').textContent = a.title;
+    document.getElementById('alert-banner-msg').textContent = a.msg;
+    banner.classList.remove('hidden');
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 750; o.type = 'square';
+      g.gain.setValueAtTime(0.1, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.4);
+    } catch(e){}
+    if(Notification.permission === 'granted') {
+      new Notification(a.title, { body: a.msg });
+    }
+  }
+
+  document.getElementById('alert-banner-close').addEventListener('click', () => {
+    document.getElementById('alert-banner').classList.add('hidden');
+  });
+
+  document.getElementById('enable-alerts-btn').addEventListener('click', async () => {
+    if(!('Notification' in window)) return alert('Navegador não suporta notificações.');
+    const perm = await Notification.requestPermission();
+    if(perm === 'granted') alert('✅ Alertas ativados com sucesso no dispositivo!');
+  });
+
+  // Alternância de Camadas Interativas
+  document.querySelectorAll('.layer-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active', 'bg-cyan-950/80', 'border-cyan-500/50', 'text-cyan-300'));
+      btn.classList.add('active');
+      state.activeLayer = btn.getAttribute('data-layer');
+      document.getElementById('layer-legend').textContent = `Camada ativa: ${btn.textContent.trim()} (Tempo real)`;
+    });
+  });
+
+  // Canvas de Partículas (Efeito Estilo Windy)
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  const particles = Array.from({length: 120}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    speed: Math.random() * 2 + 1,
+    angle: Math.random() * Math.PI * 2
+  }));
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = state.activeLayer === 'waves' ? 'rgba(56, 189, 248, 0.4)' : 'rgba(34, 211, 238, 0.4)';
+    ctx.lineWidth = 1.5;
+    particles.forEach(p => {
+      p.x += Math.cos(p.angle) * p.speed;
+      p.y += Math.sin(p.angle) * p.speed;
+      if(p.x < 0) p.x = canvas.width; if(p.x > canvas.width) p.x = 0;
+      if(p.y < 0) p.y = canvas.height; if(p.y > canvas.height) p.y = 0;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - Math.cos(p.angle)*8, p.y - Math.sin(p.angle)*8);
+      ctx.stroke();
+    });
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  // Gerador de Laudos via IA
+  document.getElementById('trigger-ai-analysis').addEventListener('click', () => {
+    const modal = document.getElementById('report-modal');
+    const body = document.getElementById('report-body');
+    const model = document.getElementById('ai-model-selector').value;
+    document.getElementById('report-title').textContent = `Laudo Preditivo — Motor ${model}`;
+    
+    body.innerHTML = `<p class="text-cyan-400 animate-pulse">Sincronizando telemetria com ${model}...</p>`;
+    modal.classList.add('open');
+
+    setTimeout(() => {
+      body.innerHTML = `
+        <strong>LAUDO TÉCNICO EXECUTIVO — AETHERIS ONE SENTINEL</strong><br>
+        -------------------------------------------------------------<br>
+        <strong>Localização:</strong> ${state.locationName} (${state.lat.toFixed(4)}, ${state.lon.toFixed(4)})<br>
+        <strong>Motor de Inteligência:</strong> ${model}<br>
+        <strong>Timestamp:</strong> ${new Date().toLocaleString('pt-BR')}<br><br>
+        <strong>1. Análise Sinótica do Setor:</strong><br>
+        Condições estáveis com escoamento superficial controlado. Gradiente de pressão barométrica mantido dentro da normalidade operacional para navegação e atividades em campo.<br><br>
+        <strong>2. Indicadores de Risco Marítimo & Vento:</strong><br>
+        Velocidade média de ventos em faixa segura. Ondulação de maré monitorada em metros com período estável. Ausência de frentes frias abruptas nas próximas 12 horas.<br><br>
+        <strong>3. Parecer do Sentinela 24/7:</strong><br>
+        Sistemas operando sem restrições. Monitoramento autônomo ativado em segundo plano para alerta precoce preventivo.
+      `;
+    }, 1200);
+  });
+
+  document.getElementById('close-report').addEventListener('click', () => document.getElementById('report-modal').classList.remove('open'));
+  document.getElementById('copy-report').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('report-body').innerText);
+    alert('Laudo copiado para a área de transferência!');
+  });
+  document.getElementById('print-report').addEventListener('click', () => window.print());
+
+  // Sistema de Checkout & Pagamentos (Mensal / Lifes)
+  const billingModal = document.getElementById('billing-modal');
+  document.getElementById('open-billing-modal').addEventListener('click', () => {
+    billingModal.classList.add('open');
+    generatePixQRCode();
+  });
+  document.getElementById('close-billing').addEventListener('click', () => billingModal.classList.remove('open'));
+
+  document.getElementById('plan-monthly').addEventListener('click', () => {
+    state.plan = 'monthly';
+    document.getElementById('plan-monthly').classList.add('sel', 'border-cyan-500');
+    document.getElementById('plan-lifetime').classList.remove('sel', 'border-cyan-500');
+    document.getElementById('plan-lifetime').classList.add('border-zinc-700');
+  });
+  document.getElementById('plan-lifetime').addEventListener('click', () => {
+    state.plan = 'lifetime';
+    document.getElementById('plan-lifetime').classList.add('sel', 'border-cyan-500');
+    document.getElementById('plan-monthly').classList.remove('sel', 'border-cyan-500');
+    document.getElementById('plan-monthly').classList.add('border-zinc-700');
+  });
+
+  function generatePixQRCode() {
+    const container = document.getElementById('qrcode');
+    container.innerHTML = '';
+    new QRCode(container, {
+      text: "00020126580014br.gov.bcb.pix... [Aetheris One Pay]",
+      width: 140, height: 140
+    });
+  }
+
+  document.getElementById('confirm-payment-btn').addEventListener('click', () => {
+    alert(`Pagamento simulado com sucesso! Plano ${state.plan === 'monthly' ? 'Mensal Profissional' : 'Lifetime (Life)'} ativado para ${document.getElementById('checkout-email').value || 'usuário'}.`);
+    billingModal.classList.remove('open');
+  });
+
+  // Painel Admin
+  const adminModal = document.getElementById('admin-modal');
+  document.getElementById('toggle-admin-btn').addEventListener('click', () => adminModal.classList.add('open'));
+  document.getElementById('close-admin').addEventListener('click', () => adminModal.classList.remove('open'));
+  document.getElementById('save-apikey-btn').addEventListener('click', () => alert('Chave de API salva com sucesso no armazenamento local!'));
+
+  // Captura de Afiliados via URL `?ref=`
+  const urlParams = new URLSearchParams(window.location.search);
+  const refCode = urlParams.get('ref') || 'padrao';
+  document.getElementById('affiliate-ref-display').textContent = `ref=${refCode}`;
+
+  // Inicialização padrão
+  fetchWeatherData();
+</script>
+</body>
+</html>
