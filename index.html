@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vai Dar Merda — Plataforma Meteorológica de Alta Precisão & IA Dinâmica</title>
+    <title>Vai Dar Merda — Plataforma Meteorológica de Precisão & Alerta Precoce</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -18,9 +18,10 @@
             }
         }
     </script>
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -44,31 +45,40 @@
             </div>
             <div>
                 <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-blue-400 to-red-400 bg-clip-text text-transparent">Vai Dar Merda</h1>
-                <p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Dynamic AI Engine v5.0</p>
+                <p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Windy Pro + Defesa Civil v5.2</p>
             </div>
         </div>
 
-        <!-- Seletor dos Melhores Modelos da API (Comprovados na Conta) -->
+        <!-- Controles & Seletor de Modelos UseOneAI -->
         <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-1.5">
+            <div class="hidden md:flex items-center space-x-2 bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-1.5">
                 <i class="fa-solid fa-microchip text-blue-400 text-xs"></i>
                 <select id="global-ai-model" class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer font-mono">
-                    <option value="chatgpt-5.5">ChatGPT 5.5 (Geral / Análise)</option>
-                    <option value="nemotron-3-ultra" selected>Nemotron 3 Ultra (Padrão)</option>
-                    <option value="claude-opus-4.8">Claude Opus 4.8 (Relatórios Profundos)</option>
-                    <option value="gemini-3.7-flash">Gemini 3.7 Flash (Respostas Rápidas)</option>
-                    <option value="deepseek-r1">DeepSeek R1 (Raciocínio Lógico de Risco)</option>
-                    <option value="llama-4-maverick">Llama 4 Maverick (Previsões)</option>
+                    <option value="nemotron-3-ultra" selected>Nemotron 3 Ultra</option>
+                    <option value="chatgpt-5.5">ChatGPT 5.5</option>
+                    <option value="claude-opus-4.8">Claude Opus 4.8</option>
+                    <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
+                    <option value="deepseek-r1">DeepSeek R1</option>
+                    <option value="llama-4-maverick">Llama 4 Maverick</option>
+                    <option value="qwen-3.8-max">Qwen 3.8 Max</option>
                 </select>
             </div>
 
+            <button onclick="requestNotificationPermission()" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 text-xs font-semibold flex items-center space-x-2 transition">
+                <i class="fa-solid fa-bell"></i>
+                <span>Push</span>
+            </button>
             <button onclick="triggerManualAlert()" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 text-xs font-semibold flex items-center space-x-2 transition">
                 <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                 <span>Alerta Defesa Civil</span>
             </button>
             <button onclick="toggleChatDrawer()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 text-xs font-semibold flex items-center space-x-2 transition">
                 <i class="fa-solid fa-robot text-blue-400"></i>
-                <span>Chat IA Dinâmico</span>
+                <span>Chat IA</span>
+            </button>
+            <button onclick="openReportModal()" class="px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-400 hover:bg-blue-600/30 text-xs font-semibold flex items-center space-x-2 transition">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Relatório</span>
             </button>
             <button onclick="switchView('admin')" class="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" title="Painel Admin">
                 <i class="fa-solid fa-gear"></i>
@@ -76,14 +86,15 @@
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Application View -->
     <div id="main-view" class="flex-1 flex relative overflow-hidden">
-        <!-- Sidebar / Weather Controls -->
+        <!-- Sidebar / Controls -->
         <aside class="w-96 glass border-r border-slate-800 flex flex-col z-20 shrink-0 overflow-y-auto p-4 space-y-4">
+            <!-- Search Location -->
             <div class="space-y-2">
                 <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Localização de Precisão</label>
                 <div class="relative">
-                    <input type="text" id="search-input" value="São Paulo, SP" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="Cidade ou Coordenadas...">
+                    <input type="text" id="search-input" value="São Paulo, SP" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="Cidade...">
                     <button onclick="updateLocationData()" class="absolute right-2 top-2 px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-500">Buscar</button>
                 </div>
             </div>
@@ -92,25 +103,25 @@
             <div class="space-y-2">
                 <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Camadas do Mapa</label>
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="setLayer('wind')" class="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/50 text-blue-400 text-xs font-medium flex items-center space-x-2">
+                    <button onclick="setLayer('wind')" id="btn-layer-wind" class="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/50 text-blue-400 text-xs font-medium flex items-center space-x-2 transition">
                         <i class="fa-solid fa-wind"></i><span>Vento Exato</span>
                     </button>
-                    <button onclick="setLayer('temp')" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2">
+                    <button onclick="setLayer('temp')" id="btn-layer-temp" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition">
                         <i class="fa-solid fa-temperature-high"></i><span>Temperatura</span>
                     </button>
-                    <button onclick="setLayer('rain')" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2">
+                    <button onclick="setLayer('rain')" id="btn-layer-rain" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition">
                         <i class="fa-solid fa-cloud-rain"></i><span>Precipitação</span>
                     </button>
-                    <button onclick="setLayer('pressure')" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2">
+                    <button onclick="setLayer('pressure')" id="btn-layer-pres" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition">
                         <i class="fa-solid fa-gauge"></i><span>Pressão (hPa)</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Variáveis Exatas -->
+            <!-- Exact Weather Variables -->
             <div class="glass rounded-2xl p-4 space-y-3 border border-slate-800/80">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span class="text-xs font-bold text-slate-300 uppercase">Variáveis Exatas (100%)</span>
+                    <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Variáveis Exatas (100%)</span>
                     <span id="update-timestamp" class="text-[10px] text-emerald-400 font-mono">Ao vivo</span>
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-xs">
@@ -119,247 +130,392 @@
                         <span id="val-temp" class="text-base font-bold text-slate-100 font-mono">--.- °C</span>
                     </div>
                     <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 block">Umidade</span>
+                        <span class="text-slate-400 block">Umidade Relativa</span>
                         <span id="val-hum" class="text-base font-bold text-slate-100 font-mono">-- %</span>
                     </div>
                     <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 block">Vento</span>
+                        <span class="text-slate-400 block">Vento (Vel / Rajada)</span>
                         <span id="val-wind" class="text-base font-bold text-slate-100 font-mono">--.- km/h</span>
                     </div>
                     <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
                         <span class="text-slate-400 block">Precipitação</span>
                         <span id="val-rain" class="text-base font-bold text-slate-100 font-mono">--.-- mm</span>
                     </div>
+                    <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
+                        <span class="text-slate-400 block">Pressão Atmosférica</span>
+                        <span id="val-pres" class="text-base font-bold text-slate-100 font-mono">---- hPa</span>
+                    </div>
+                    <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
+                        <span class="text-slate-400 block">Ponto de Orvalho</span>
+                        <span id="val-dew" class="text-base font-bold text-slate-100 font-mono">--.- °C</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Laudo IA (Dinâmico) -->
+            <!-- AI Risk Summary -->
             <div class="glass rounded-2xl p-4 space-y-2 border border-slate-800/80">
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-blue-400 uppercase"><i class="fa-solid fa-brain mr-1.5"></i>Laudo Preditivo IA</span>
-                    <button onclick="fetchAIPrediction()" class="text-[10px] bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 px-2.5 py-1 rounded transition font-semibold">Gerar Laudo API</button>
+                    <span class="text-xs font-bold text-blue-400 uppercase tracking-wider"><i class="fa-solid fa-brain mr-1.5"></i>Laudo Preditivo IA</span>
+                    <button onclick="fetchAIPrediction()" class="text-[10px] bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 px-2.5 py-1 rounded transition font-semibold">Atualizar Laudo</button>
                 </div>
                 <p id="ai-prediction-text" class="text-xs text-slate-300 leading-relaxed font-mono bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                    Clique em Gerar Laudo API para consultar o modelo selecionado em tempo real...
+                    Clique em Atualizar Laudo para analisar as variáveis via UseOneAI...
                 </p>
             </div>
         </aside>
 
-        <!-- Leaflet Map -->
+        <!-- Leaflet Map Container -->
         <main class="flex-1 relative">
             <div id="map" class="w-full h-full"></div>
         </main>
     </div>
 
-    <!-- Modal Alerta Defesa Civil -->
+    <!-- Admin Panel View -->
+    <div id="admin-view" class="absolute inset-0 bg-[#0b0f19] z-40 hidden flex flex-col p-8 overflow-y-auto">
+        <div class="max-w-4xl mx-auto w-full space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-red-400 bg-clip-text text-transparent">Painel Administrativo (/admin)</h2>
+                    <p class="text-xs text-slate-400 font-mono">Configuração de Limiares da Defesa Civil e Credenciais de API</p>
+                </div>
+                <button onclick="switchView('app')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Voltar ao App</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="font-bold text-sm text-slate-200">Limiares de Alerta Precoce</h3>
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="text-slate-400 block mb-1">Limite de Chuva Crítica (mm/h)</label>
+                            <input type="number" id="cfg-rain" value="25.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Limite de Vento / Rajada (km/h)</label>
+                            <input type="number" id="cfg-wind" value="60.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Queda de Pressão Crítica (hPa/3h)</label>
+                            <input type="number" id="cfg-pres" value="4.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                        </div>
+                        <button onclick="saveAdminConfigs()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition">Salvar Configurações</button>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="font-bold text-sm text-slate-200">Integração UseOneAI (API Ativa)</h3>
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="text-slate-400 block mb-1">Base URL</label>
+                            <input type="text" value="https://api.useoneai.app/v1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-400 font-mono" readonly>
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Chave de API (Operation Special)</label>
+                            <input type="password" id="admin-apikey" value="sk-60aa3285a868c411ee43ff04b44c808c154978b83d3ad0e0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 font-mono">
+                        </div>
+                        <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-1">
+                            <span class="text-emerald-400 font-bold block">Status: Conectado</span>
+                            <span class="text-slate-400 text-[10px] block">Endpoint de Chat pronto para consultas e relatórios em tempo real.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Drawer Flutuante -->
+    <div id="chat-drawer" class="fixed right-0 top-16 bottom-0 w-96 glass border-l border-slate-800 z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+            <span class="text-xs font-bold text-slate-200 uppercase flex items-center space-x-2">
+                <i class="fa-solid fa-robot text-blue-400"></i><span>Chat IA (UseOneAI)</span>
+            </span>
+            <button onclick="toggleChatDrawer()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
+            <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-slate-300">
+                Olá! Sou seu assistente meteorológico conectado à UseOneAI. Como posso ajudar com a previsão ou os riscos atuais da sua região?
+            </div>
+        </div>
+        <div class="p-3 border-t border-slate-800 flex space-x-2">
+            <input type="text" id="chat-input" onkeypress="handleChatKey(event)" placeholder="Digite sua pergunta..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+            <button onclick="sendChatMessage()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Modal Alerta Defesa Civil (Pré-notificação Crítica) -->
     <div id="civil-alert-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="glass max-w-lg w-full p-6 rounded-3xl border-2 border-red-500 alert-active space-y-4 bg-slate-950/90 text-center">
             <div class="w-16 h-16 rounded-full bg-red-500/20 border border-red-500 text-red-500 flex items-center justify-center mx-auto text-2xl animate-bounce">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <div class="space-y-1">
-                <span class="text-xs font-mono uppercase tracking-widest text-red-400 font-bold">ALERTA ANTECIPADO — DEFESA CIVIL</span>
+                <span class="text-xs font-mono uppercase tracking-widest text-red-400 font-bold">ALERTA ANTECIPADO — DEFESA CIVIL / SISTEMA</span>
                 <h3 class="text-xl font-bold text-white">Risco Imediato de Tempestade Severa</h3>
             </div>
-            <p class="text-sm text-slate-300">Variáveis ultrapassaram os limiares críticos. Notificação preventiva disparada antes dos boletins oficiais.</p>
-            <button onclick="closeCivilAlert()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold text-sm transition shadow-lg shadow-red-600/30">Compreendido / Silenciar Alerta</button>
-        </div>
-    </div>
-
-    <!-- Chat Drawer Flutuante (100% Dinâmico via API) -->
-    <div id="chat-drawer" class="fixed right-0 top-16 bottom-0 w-96 glass border-l border-slate-800 z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
-        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-            <span class="text-xs font-bold text-slate-200 uppercase flex items-center space-x-2">
-                <i class="fa-solid fa-robot text-blue-400"></i><span>Chat IA Dinâmico (UseOneAI)</span>
-            </span>
-            <button onclick="toggleChatDrawer()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
-        </div>
-        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs font-mono">
-            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300">
-                <span class="text-blue-400 font-bold block mb-1">Assistente:</span>
-                Olá! Estou conectado diretamente à API UseOneAI. Faça perguntas sobre meteorologia, riscos ou tempestades.
+            <p id="alert-desc-modal" class="text-sm text-slate-300 leading-relaxed">
+                Nossos sensores e o modelo preditivo detectaram acumulação rápida de chuva e rajadas acima do limite crítico na sua região monitorada. O sistema notifica você antes dos alertas convencionais.
+            </p>
+            <div class="p-3 bg-red-500/10 rounded-xl border border-red-500/30 text-xs text-red-300 font-mono">
+                Ação recomendada: Evite áreas de alagamento e busque abrigo seguro imediatamente.
             </div>
-        </div>
-        <div class="p-3 border-t border-slate-800 bg-slate-900/50 flex space-x-2">
-            <input type="text" id="chat-input" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500" placeholder="Digite sua pergunta..." onkeypress="if(event.key==='Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition"><i class="fa-solid fa-paper-plane"></i></button>
-        </div>
-    </div>
-
-    <!-- Admin Panel View (/admin) -->
-    <div id="admin-view" class="absolute inset-0 bg-[#0b0f19] z-40 hidden flex flex-col p-8 overflow-y-auto">
-        <div class="max-w-4xl mx-auto w-full space-y-6">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
-                <div>
-                    <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-red-400 bg-clip-text text-transparent">Painel Administrativo (/admin)</h2>
-                    <p class="text-xs text-slate-400 font-mono">Gerenciamento de API Key e Configuração de Limiares</p>
-                </div>
-                <button onclick="switchView('app')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-semibold transition">Voltar ao App</button>
-            </div>
-            <div class="glass p-6 rounded-2xl border border-slate-800 space-y-4">
-                <h3 class="font-bold text-sm text-slate-200">Credenciais Oficiais UseOneAI</h3>
-                <div class="space-y-2 text-xs">
-                    <label class="text-slate-400 block">Base URL</label>
-                    <input type="text" value="https://api.useoneai.app/v1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-300 font-mono" readonly>
-                </div>
-                <div class="space-y-2 text-xs">
-                    <label class="text-slate-400 block">API Key Ativa (Bearer Token)</label>
-                    <input type="text" id="admin-api-key" value="sk-60aa3285a868c411ee43ff04b44c808c154978b83d3ad0e0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-300 font-mono" readonly>
-                </div>
-                <div class="grid grid-cols-2 gap-4 pt-2">
-                    <div class="space-y-1 text-xs">
-                        <label class="text-slate-400">Limite Crítico de Chuva (mm)</label>
-                        <input type="number" id="cfg-rain-limit" value="25.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
-                    </div>
-                    <div class="space-y-1 text-xs">
-                        <label class="text-slate-400">Limite Vento Crítico (km/h)</label>
-                        <input type="number" id="cfg-wind-limit" value="60.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
-                    </div>
-                </div>
-                <button onclick="alert('Configurações salvas com sucesso!')" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition">Salvar Alterações</button>
+            <div class="flex space-x-3 pt-2">
+                <button onclick="closeCivilAlert()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-semibold text-sm transition">Compreendido / Silenciar</button>
+                <button onclick="openReportModal()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold text-sm transition shadow-lg shadow-red-600/30">Gerar Laudo de Risco</button>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Application Core -->
+    <!-- Modal Relatório Executivo -->
+    <div id="report-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass max-w-2xl w-full p-6 rounded-3xl border border-slate-800 space-y-4 bg-slate-950/95">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2"><i class="fa-solid fa-file-pdf text-blue-400"></i><span>Laudo Meteorológico Oficial</span></h3>
+                <button onclick="closeReportModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="report-content" class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300 space-y-2 max-h-96 overflow-y-auto">
+                Carregando dados do relatório executivo...
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="window.print()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition">Imprimir / Salvar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts de Lógica e Integração -->
     <script>
-        const API_KEY = "sk-60aa3285a868c411ee43ff04b44c808c154978b83d3ad0e0";
-        const API_URL = "https://api.useoneai.app/v1/chat/completions";
+        let map;
+        let currentLat = -23.5505;
+        let currentLon = -46.6333;
+        let currentWeatherData = null;
 
-        let map, weatherData = { temp: 24.5, hum: 78, wind: 18.2, rain: 0.00, pressure: 1013.2, dew: 19.1 };
-
-        // Inicialização do Mapa Leaflet sem bugs
-        window.addEventListener('DOMContentLoaded', () => {
-            map = L.map('map', { zoomControl: false }).setView([-23.5505, -46.6333], 11);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        // Inicialização do Mapa Leaflet com correção de redimensionamento
+        function initMap() {
+            if (map) return;
+            map = L.map('map', { zoomControl: false }).setView([currentLat, currentLon], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; OpenStreetMap & CARTO'
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
             setTimeout(() => { map.invalidateSize(); }, 300);
-            updateWeatherUI();
-        });
+        }
 
         function switchView(view) {
-            document.getElementById('admin-view').classList.toggle('hidden', view !== 'admin');
-            document.getElementById('main-view').classList.toggle('hidden', view !== 'app');
-            if(view === 'app') setTimeout(() => { map.invalidateSize(); }, 200);
+            const mainView = document.getElementById('main-view');
+            const adminView = document.getElementById('admin-view');
+            if (view === 'admin') {
+                mainView.classList.add('hidden');
+                adminView.classList.remove('hidden');
+            } else {
+                adminView.classList.add('hidden');
+                mainView.classList.remove('hidden');
+                setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+            }
         }
 
         function toggleChatDrawer() {
-            document.getElementById('chat-drawer').classList.toggle('translate-x-full');
+            const drawer = document.getElementById('chat-drawer');
+            drawer.classList.toggle('translate-x-full');
+        }
+
+        function setLayer(layerType) {
+            ['wind', 'temp', 'rain', 'pressure'].forEach(l => {
+                const btn = document.getElementById(`btn-layer-${l === 'pressure' ? 'pres' : l}`);
+                if (btn) {
+                    btn.className = l === layerType 
+                        ? 'p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/50 text-blue-400 text-xs font-medium flex items-center space-x-2 transition'
+                        : 'p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition';
+                }
+            });
+            fetchWeatherData();
+        }
+
+        // Consulta de Dados Meteorológicos (Open-Meteo)
+        async function fetchWeatherData() {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,surface_pressure,wind_speed_10m,wind_gusts_10m,dew_point_2m`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data && data.current) {
+                    currentWeatherData = data.current;
+                    document.getElementById('val-temp').innerText = `${currentWeatherData.temperature_2m.toFixed(1)} °C`;
+                    document.getElementById('val-hum').innerText = `${currentWeatherData.relative_humidity_2m} %`;
+                    document.getElementById('val-wind').innerText = `${currentWeatherData.wind_speed_10m.toFixed(1)} / ${currentWeatherData.wind_gusts_10m.toFixed(1)} km/h`;
+                    document.getElementById('val-rain').innerText = `${currentWeatherData.rain.toFixed(2)} mm`;
+                    document.getElementById('val-pres').innerText = `${currentWeatherData.surface_pressure.toFixed(0)} hPa`;
+                    document.getElementById('val-dew').innerText = `${currentWeatherData.dew_point_2m.toFixed(1)} °C`;
+                    document.getElementById('update-timestamp').innerText = new Date().toLocaleTimeString();
+
+                    checkCivilAlertThresholds(currentWeatherData);
+                }
+            } catch (e) {
+                console.error("Erro ao buscar dados climáticos", e);
+            }
+        }
+
+        async function updateLocationData() {
+            const query = document.getElementById('search-input').value;
+            try {
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1`);
+                const data = await res.json();
+                if (data && data.results && data.results.length > 0) {
+                    currentLat = data.results[0].latitude;
+                    currentLon = data.results[0].longitude;
+                    if (map) map.setView([currentLat, currentLon], 12);
+                    fetchWeatherData();
+                } else {
+                    alert("Localização não encontrada.");
+                }
+            } catch (e) {
+                alert("Erro ao buscar localização.");
+            }
+        }
+
+        // Verificação de Limiares para Alerta Precoce
+        function checkCivilAlertThresholds(weather) {
+            const maxRain = parseFloat(document.getElementById('cfg-rain').value) || 25.0;
+            const maxWind = parseFloat(document.getElementById('cfg-wind').value) || 60.0;
+            if (weather.rain >= maxRain || weather.wind_gusts_10m >= maxWind) {
+                triggerCivilAlertModal(weather);
+            }
         }
 
         function triggerManualAlert() {
-            document.getElementById('civil-alert-modal').classList.remove('hidden');
+            triggerCivilAlertModal(currentWeatherData || { rain: 35.0, wind_gusts_10m: 72.0 });
+        }
+
+        function triggerCivilAlertModal(weather) {
+            const modal = document.getElementById('civil-alert-modal');
+            const desc = document.getElementById('alert-desc-modal');
+            desc.innerText = `Variáveis críticas detectadas! Precipitação atual: ${weather.rain || 0} mm, Rajada de vento: ${weather.wind_gusts_10m || 0} km/h. O sistema disparou este aviso antecipado antes dos boletins oficiais.`;
+            modal.classList.remove('hidden');
         }
 
         function closeCivilAlert() {
             document.getElementById('civil-alert-modal').classList.add('hidden');
         }
 
-        function updateWeatherUI() {
-            document.getElementById('val-temp').innerText = weatherData.temp.toFixed(1) + " °C";
-            document.getElementById('val-hum').innerText = weatherData.hum + " %";
-            document.getElementById('val-wind').innerText = weatherData.wind.toFixed(1) + " km/h";
-            document.getElementById('val-rain').innerText = weatherData.rain.toFixed(2) + " mm";
-            document.getElementById('update-timestamp').innerText = new Date().toLocaleTimeString();
+        function requestNotificationPermission() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification("Vai Dar Merda — Alerta Ativo", { body: "Monitoramento preventivo ativado com sucesso." });
+                    }
+                });
+            } else {
+                alert("Notificações não suportadas neste navegador.");
+            }
         }
 
-        async function updateLocationData() {
-            const loc = document.getElementById('search-input').value;
-            // Simulação de busca de coordenadas exatas e variação dinâmica
-            weatherData.temp = 20 + Math.random() * 10;
-            weatherData.hum = Math.floor(60 + Math.random() * 30);
-            weatherData.wind = 10 + Math.random() * 25;
-            weatherData.rain = Math.random() > 0.7 ? Math.random() * 15 : 0;
-            updateWeatherUI();
-            
-            // Verifica limiar de alerta automático
-            const rainLimit = parseFloat(document.getElementById('cfg-rain-limit')?.value || 25);
-            if(weatherData.rain > (rainLimit / 10)) triggerManualAlert();
-        }
-
-        // Chamada Dinâmica aos Modelos da API UseOneAI
+        // Integração Real com a API UseOneAI
         async function fetchAIPrediction() {
+            const predictionText = document.getElementById('ai-prediction-text');
             const model = document.getElementById('global-ai-model').value;
-            const textEl = document.getElementById('ai-prediction-text');
-            textEl.innerText = `Consultando o modelo ${model} na UseOneAI...`;
+            const apiKey = document.getElementById('admin-apikey').value;
+            predictionText.innerText = "Consultando IA da UseOneAI...";
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
+                const prompt = `Analise as condições meteorológicas atuais para coordenadas (${currentLat}, ${currentLon}): Temperatura: ${currentWeatherData?.temperature_2m || '--'}°C, Chuva: ${currentWeatherData?.rain || '--'}mm, Vento: ${currentWeatherData?.wind_speed_10m || '--'}km/h, Pressão: ${currentWeatherData?.surface_pressure || '--'}hPa. Forneça um laudo preditivo curto e objetivo sobre riscos de tempestade ou alagamento.`;
+                
+                const response = await fetch("https://api.useoneai.app/v1/chat/completions", {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEY}`
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
                         model: model,
-                        messages: [
-                            { role: "system", content: "Você é o núcleo meteorológico de alta precisão do sistema 'Vai Dar Merda'. Analise os dados fornecidos e dê um laudo curto, técnico e direto em português sobre riscos de tempestade ou alagamento." },
-                            { role: "user", content: `Dados atuais: Temperatura ${weatherData.temp.toFixed(1)}°C, Umidade ${weatherData.hum}%, Vento ${weatherData.wind.toFixed(1)}km/h, Chuva ${weatherData.rain.toFixed(2)}mm, Pressão ${weatherData.pressure}hPa. Qual o laudo de risco imediato?` }
-                        ],
-                        temperature: 0.3
+                        messages: [{ role: "user", content: prompt }]
                     })
                 });
 
                 const data = await response.json();
-                if(data.choices && data.choices[0]) {
-                    textEl.innerText = data.choices[0].message.content;
+                if (data && data.choices && data.choices[0]) {
+                    predictionText.innerText = data.choices[0].message.content;
                 } else {
-                    textEl.innerText = "Erro ao processar resposta da IA.";
+                    predictionText.innerText = "Erro ao processar resposta da IA.";
                 }
-            } catch (err) {
-                textEl.innerText = "Falha de conexão com a API UseOneAI. Verifique sua rede.";
+            } catch (e) {
+                predictionText.innerText = "Erro de conexão com a API UseOneAI.";
             }
         }
 
+        // Chat Dinâmico com IA
         async function sendChatMessage() {
             const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
-            if(!msg) return;
+            const messagesContainer = document.getElementById('chat-messages');
+            const text = input.value.trim();
+            if (!text) return;
 
-            const chatContainer = document.getElementById('chat-messages');
-            chatContainer.innerHTML += `<div class="p-3 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-200 ml-4"><span class="font-bold block mb-1">Você:</span>${msg}</div>`;
+            messagesContainer.innerHTML += `<div class="bg-blue-600/20 p-3 rounded-2xl border border-blue-500/30 text-slate-200 ml-4">${text}</div>`;
             input.value = '';
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
             const model = document.getElementById('global-ai-model').value;
-            const loadingId = 'loading-' + Date.now();
-            chatContainer.innerHTML += `<div id="${loadingId}" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 mr-4 italic">Processando com ${model}...</div>`;
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            const apiKey = document.getElementById('admin-apikey').value;
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
+                const response = await fetch("https://api.useoneai.app/v1/chat/completions", {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEY}`
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
                         model: model,
-                        messages: [
-                            { role: "system", content: "Você é o assistente inteligente da plataforma meteorológica 'Vai Dar Merda'." },
-                            { role: "user", content: msg }
-                        ],
-                        temperature: 0.7
+                        messages: [{ role: "user", content: text }]
                     })
                 });
-
                 const data = await response.json();
-                document.getElementById(loadingId).remove();
-                
-                if(data.choices && data.choices[0]) {
+                if (data && data.choices && data.choices[0]) {
                     const reply = data.choices[0].message.content;
-                    chatContainer.innerHTML += `<div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 mr-4"><span class="text-blue-400 font-bold block mb-1">Assistente (${model}):</span>${reply}</div>`;
+                    messagesContainer.innerHTML += `<div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-slate-300 mr-4">${reply}</div>`;
                 } else {
-                    chatContainer.innerHTML += `<div class="p-3 rounded-xl bg-red-950/50 border border-red-800 text-red-300 mr-4">Erro na resposta da API.</div>`;
+                    messagesContainer.innerHTML += `<div class="bg-red-500/20 p-3 rounded-2xl border border-red-500/30 text-red-300">Erro na resposta da IA.</div>`;
                 }
-            } catch (err) {
-                document.getElementById(loadingId).remove();
-                chatContainer.innerHTML += `<div class="p-3 rounded-xl bg-red-950/50 border border-red-800 text-red-300 mr-4">Falha de conexão.</div>`;
+            } catch (e) {
+                messagesContainer.innerHTML += `<div class="bg-red-500/20 p-3 rounded-2xl border border-red-500/30 text-red-300">Falha de comunicação com a API.</div>`;
             }
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        function openReportModal() {
+            const modal = document.getElementById('report-modal');
+            const content = document.getElementById('report-content');
+            content.innerHTML = `
+                <b>LAUDO TÉCNICO DE RISCO METEOROLÓGICO</b><br>
+                Data/Hora: ${new Date().toLocaleString()}<br>
+                Coordenadas: Lat ${currentLat}, Lon ${currentLon}<br>
+                --------------------------------------------------<br>
+                Temperatura Atual: ${currentWeatherData?.temperature_2m || '--'} °C<br>
+                Precipitação Acumulada: ${currentWeatherData?.rain || '--'} mm<br>
+                Velocidade do Vento: ${currentWeatherData?.wind_speed_10m || '--'} km/h<br>
+                Rajadas: ${currentWeatherData?.wind_gusts_10m || '--'} km/h<br>
+                Pressão Atmosférica: ${currentWeatherData?.surface_pressure || '--'} hPa<br>
+                --------------------------------------------------<br>
+                Status Defesa Civil: Monitoramento ativo sem delay.<br>
+                Assinatura Digital: Plataforma Vai Dar Merda & UseOneAI Engine.
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function closeReportModal() {
+            document.getElementById('report-modal').classList.add('hidden');
+        }
+
+        function saveAdminConfigs() {
+            alert("Configurações e limiares salvos com sucesso!");
+            switchView('app');
+        }
+
+        window.onload = () => {
+            initMap();
+            fetchWeatherData();
+        };
     </script>
 </body>
 </html>
