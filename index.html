@@ -1,512 +1,243 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vai Dar Merda — Enterprise Sentinel Ultimate Edition (v10.0)</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        windy: { dark: '#070a14', card: '#0f172a', border: '#1e293b', accent: '#3b82f6', alert: '#ef4444' }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { background-color: #070a14; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-        .glass { background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .leaflet-container { background: #070a14 !important; width: 100%; height: 100%; z-index: 10; }
-        @keyframes pulse-red { 0%, 100% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 35px rgba(239, 68, 68, 0.75); } 50% { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 12px rgba(239, 68, 68, 0.25); } }
-        .alert-active { animation: pulse-red 1.2s infinite; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #070a14; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aetheris One | Monitoramento Meteorológico & Marítimo de Alta Precisão</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Estilização Customizada do Canvas de Partículas e Leaflet */
+    #map { height: 100vh; width: 100vw; z-index: 10; }
+    .leaflet-tile { filter: brightness(0.7) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    .glassmorphism {
+      background: rgba(13, 17, 23, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    #particle-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 400;
+    }
+    @keyframes pulse-radar {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .radar-pulse { animation: pulse-radar 2.5s infinite ease-in-out; }
+  </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="bg-black text-slate-100 overflow-hidden font-sans select-none">
 
-    <!-- Top Navigation Bar -->
-    <header class="h-16 glass border-b border-slate-800 flex items-center justify-between px-6 z-30 shrink-0">
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('app')">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-red-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <i class="fa-solid fa-triangle-exclamation text-white text-lg"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-blue-400 via-indigo-300 to-red-400 bg-clip-text text-transparent">Vai Dar Merda</h1>
-                <p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Enterprise Sentinel Ultimate v10.0</p>
-            </div>
-        </div>
+  <!-- MAPA E CANVAS DE VENTO SOBREPOSTO -->
+  <div id="map"></div>
+  <canvas id="particle-canvas"></canvas>
 
-        <!-- Seletor de Modelos UseOneAI & Controles Principais -->
-        <div class="flex items-center space-x-3">
-            <div class="hidden md:flex items-center space-x-2 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1.5 shadow-inner">
-                <i class="fa-solid fa-microchip text-blue-400 text-xs"></i>
-                <select id="global-ai-model" class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer font-mono">
-                    <option value="nemotron-3-ultra" selected>Nemotron 3 Ultra (Sentinel)</option>
-                    <option value="chatgpt-5.5">ChatGPT 5.5</option>
-                    <option value="claude-opus-4.8">Claude Opus 4.8</option>
-                    <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
-                    <option value="deepseek-r1">DeepSeek R1</option>
-                    <option value="llama-4-maverick">Llama 4 Maverick</option>
-                    <option value="qwen-3.8-max">Qwen 3.8 Max</option>
-                </select>
-            </div>
+  <!-- BARRA SUPERIOR (HEADER / STATUS / SELEÇÃO MULTIMODELO) -->
+  <header class="absolute top-4 left-4 right-4 z-[500] flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+    
+    <!-- Logo e Busca Ativa -->
+    <div class="glassmorphism rounded-xl px-4 py-2.5 flex items-center gap-4 pointer-events-auto shadow-2xl">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 radar-pulse"></span>
+        <span class="font-extrabold tracking-wider bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent text-lg">AETHERIS.ONE</span>
+        <span class="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-blue-950 text-cyan-400 border border-cyan-800">Pro</span>
+      </div>
 
-            <div class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                <span id="sentinel-status">IA 24/7 Ativo</span>
-            </div>
-
-            <button onclick="triggerManualAlert()" class="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 text-xs font-semibold flex items-center space-x-2 transition shadow-lg shadow-red-500/10">
-                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span>Alerta Precoce (Defesa Civil)</span>
-            </button>
-            <button onclick="toggleChatDrawer()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 text-xs font-semibold flex items-center space-x-2 transition">
-                <i class="fa-solid fa-robot text-blue-400"></i>
-                <span>Chat IA</span>
-            </button>
-            <button onclick="openReportModal()" class="px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600/30 text-xs font-semibold flex items-center space-x-2 transition">
-                <i class="fa-solid fa-download"></i>
-                <span>Baixar Laudo & Arte</span>
-            </button>
-            <button onclick="switchView('admin')" class="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition" title="Painel Admin">
-                <i class="fa-solid fa-gear"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Application View -->
-    <div id="main-view" class="flex-1 flex relative overflow-hidden">
-        <!-- Sidebar / Controls -->
-        <aside class="w-96 glass border-r border-slate-800 flex flex-col z-20 shrink-0 overflow-y-auto p-4 space-y-4">
-            <!-- Search Location -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Localização de Precisão Exata</label>
-                <div class="relative">
-                    <input type="text" id="search-input" value="São Paulo, SP" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 font-mono" placeholder="Cidade ou Coordenadas Lat, Lon...">
-                    <button onclick="updateLocationData()" class="absolute right-2 top-2 px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-500 transition shadow">Buscar</button>
-                </div>
-            </div>
-
-            <!-- Camadas Estilo Windy (Totalmente Funcionais) -->
-            <div class="space-y-2">
-                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Camadas do Mapa (Windy Pro)</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="setLayer('wind')" id="btn-layer-wind" class="p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/50 text-blue-400 text-xs font-medium flex items-center space-x-2 transition">
-                        <i class="fa-solid fa-wind"></i><span>Vento Exato</span>
-                    </button>
-                    <button onclick="setLayer('temp')" id="btn-layer-temp" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition">
-                        <i class="fa-solid fa-temperature-high"></i><span>Temperatura</span>
-                    </button>
-                    <button onclick="setLayer('rain')" id="btn-layer-rain" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition">
-                        <i class="fa-solid fa-cloud-rain"></i><span>Precipitação</span>
-                    </button>
-                    <button onclick="setLayer('pressure')" id="btn-layer-pres" class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition">
-                        <i class="fa-solid fa-gauge"></i><span>Pressão (hPa)</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Variáveis Exatas & Metragem de Ondas / Maré -->
-            <div class="glass rounded-2xl p-4 space-y-3 border border-slate-800/80 shadow-xl">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Variáveis Exatas & Ondas</span>
-                    <span id="update-timestamp" class="text-[10px] text-emerald-400 font-mono">24/7 Ativo</span>
-                </div>
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                    <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 block">Temperatura</span>
-                        <span id="val-temp" class="text-base font-bold text-slate-100 font-mono">--.- °C</span>
-                    </div>
-                    <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 block">Umidade Relativa</span>
-                        <span id="val-hum" class="text-base font-bold text-slate-100 font-mono">-- %</span>
-                    </div>
-                    <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 block">Vento / Rajada</span>
-                        <span id="val-wind" class="text-base font-bold text-slate-100 font-mono">--.- km/h</span>
-                    </div>
-                    <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
-                        <span class="text-slate-400 block">Precipitação</span>
-                        <span id="val-rain" class="text-base font-bold text-slate-100 font-mono">--.-- mm</span>
-                    </div>
-                    <!-- DESTAQUE DA METRAGEM DE ONDAS E MARÉ -->
-                    <div class="bg-slate-900/70 p-3 rounded-xl border border-blue-500/40 col-span-2 bg-gradient-to-r from-blue-950/60 to-slate-900/80 shadow-inner">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-blue-400 font-bold uppercase text-[11px]"><i class="fa-solid fa-water mr-1"></i>Ondas (Metros) & Maré</span>
-                            <span id="val-wave-badge" class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold">-- m</span>
-                        </div>
-                        <span id="val-tide" class="text-xs font-bold text-slate-100 font-mono block">Monitorando maré e ondas 24/7...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sentinel AI Risk Summary -->
-            <div class="glass rounded-2xl p-4 space-y-2 border border-slate-800/80 shadow-xl">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-blue-400 uppercase tracking-wider"><i class="fa-solid fa-brain mr-1.5"></i>Sentinel IA (24/7)</span>
-                    <button onclick="fetchAIPrediction()" class="text-[10px] bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 px-2.5 py-1 rounded transition font-semibold">Consultar IA</button>
-                </div>
-                <p id="ai-prediction-text" class="text-xs text-slate-300 leading-relaxed font-mono bg-slate-900/70 p-3 rounded-xl border border-slate-800/80">Iniciando varredura autônoma dos modelos UseOneAI...</p>
-            </div>
-        </aside>
-
-        <!-- Map Container -->
-        <main class="flex-1 relative">
-            <div id="map" class="w-full h-full"></div>
-
-            <!-- Floating Status Badge -->
-            <div class="absolute bottom-4 left-4 glass px-4 py-2.5 rounded-xl border border-slate-700/80 flex items-center space-x-3 z-20 shadow-2xl">
-                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" id="status-dot"></div>
-                <div>
-                    <p class="text-xs font-bold text-slate-200" id="current-location-label">São Paulo, SP — Cobertura Ativa</p>
-                    <p class="text-[10px] text-slate-400 font-mono">Lat: <span id="lat-val">-23.5505</span> | Lon: <span id="lon-val">-46.6333</span></p>
-                </div>
-            </div>
-        </main>
+      <!-- Barra de Busca Geocodificada em Tempo Real -->
+      <div class="relative flex items-center">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3"></i>
+        <input id="search-input" type="text" placeholder="Buscar cidade, porto ou coordenadas..." 
+               class="bg-slate-900/90 text-xs text-white pl-9 pr-8 py-2 rounded-lg border border-slate-700/60 focus:border-cyan-500 focus:outline-none w-64 transition-all">
+        <button id="search-btn" class="absolute right-2 text-slate-400 hover:text-white">
+          <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
     </div>
 
-    <!-- Admin & Monetization Dashboard View (Hidden by default) -->
-    <div id="admin-view" class="flex-1 hidden flex-col overflow-y-auto p-8 space-y-6 z-40 bg-[#070a14]">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-4">
-            <div>
-                <h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-shield-halved text-blue-500 mr-3"></i>Painel Administrativo & Monetização</h2>
-                <p class="text-xs text-slate-400 font-mono mt-1">Gerenciamento de API UseOneAI, Afiliados (?ref=), Reembolsos e Logs de Monitoramento 24/7</p>
-            </div>
-            <button onclick="switchView('app')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center space-x-2 transition">
-                <i class="fa-solid fa-arrow-left"></i><span>Voltar ao Radar</span>
-            </button>
-        </div>
+    <!-- Seletor Multimodelo de IA -->
+    <div class="glassmorphism rounded-xl px-4 py-2 flex items-center gap-3 pointer-events-auto shadow-2xl">
+      <div class="flex items-center gap-2 text-xs">
+        <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+        <span class="text-slate-400 hidden sm:inline">Motor de Análise:</span>
+        <select id="ai-model-selector" class="bg-slate-900 border border-slate-700 text-cyan-300 font-medium text-xs rounded-lg px-2.5 py-1.5 focus:border-cyan-400 focus:outline-none cursor-pointer">
+          <option value="Nemotron 3 Ultra">Nemotron 3 Ultra</option>
+          <option value="ChatGPT 5.5">ChatGPT 5.5</option>
+          <option value="Claude Opus 4.8">Claude Opus 4.8</option>
+          <option value="Gemini 3.7 Flash" selected>Gemini 3.7 Flash</option>
+          <option value="DeepSeek R1">DeepSeek R1</option>
+          <option value="Llama 4 Maverick">Llama 4 Maverick</option>
+          <option value="Qwen 3.8 Max">Qwen 3.8 Max</option>
+        </select>
+      </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- API Status & Key Management -->
-            <div class="glass p-6 rounded-2xl border border-slate-800 space-y-4">
-                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-wider"><i class="fa-solid fa-key mr-2"></i>Chave API UseOneAI</h3>
-                <p class="text-xs text-slate-300">Cada conta admite 1 chave ativa por vez. Para gerenciar chaves ou revogar, utilize o protocolo seguro.</p>
-                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 font-mono text-xs text-emerald-400 break-all">
-                    sk-60aa3285a868c411ee43ff04b44c808c154978b83d3ad0e0
-                </div>
-                <div class="flex space-x-2">
-                    <button onclick="alert('Chave ativa e validada com sucesso!')" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition">Testar Conexão</button>
-                    <button onclick="alert('Para trocar a chave, revogue a atual em DELETE /api/keys/:id conforme política da UseOneAI.')" class="py-2 px-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-semibold transition">Revogar</button>
-                </div>
-            </div>
-
-            <!-- Affiliate Tracker (?ref=) -->
-            <div class="glass p-6 rounded-2xl border border-slate-800 space-y-4">
-                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-handshake mr-2"></i>Sistema de Afiliados (?ref=)</h3>
-                <p class="text-xs text-slate-300">Links de afiliado capturam o código via parâmetro e contabilizam comissões automaticamente no checkout.</p>
-                <div class="space-y-2 text-xs">
-                    <span class="text-slate-400 block">Seu Link de Afiliado Atual:</span>
-                    <input type="text" readonly value="https://vaidarmerda.app/?ref=SENTINEL2026" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono select-all">
-                </div>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
-                    <span class="text-slate-400">Vendas Atribuídas:</span>
-                    <span class="text-emerald-400 font-bold font-mono">142 conversões</span>
-                </div>
-            </div>
-
-            <!-- Refund Policy (7 dias) -->
-            <div class="glass p-6 rounded-2xl border border-slate-800 space-y-4">
-                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider"><i class="fa-solid fa-rotate-left mr-2"></i>Política de Reembolso (7 Dias)</h3>
-                <p class="text-xs text-slate-300">Direito de arrependimento conforme art. 49 do CDC (Lei nº 8.078/1990). Solicitações em <span class="font-mono text-blue-400">useoneai.com/reembolso</span>.</p>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-1 text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Prazo legal:</span><span class="text-slate-200 font-mono">7 dias corridos</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Status da Conta:</span><span class="text-emerald-400 font-semibold font-mono">Ativa / Elegível</span></div>
-                </div>
-                <button onclick="window.open('https://useoneai.com/reembolso', '_blank')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition">Solicitar Reembolso</button>
-            </div>
-        </div>
+      <button id="trigger-ai-analysis" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg shadow-cyan-900/40 transition active:scale-95">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+        <span>Gerar Laudo</span>
+      </button>
     </div>
 
-    <!-- Chat AI Drawer -->
-    <div id="chat-drawer" class="fixed right-0 top-16 bottom-0 w-96 glass border-l border-slate-800 z-40 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
-        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-            <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-robot text-blue-400"></i>
-                <span class="text-sm font-bold text-slate-200">Sentinel AI Assistant</span>
-            </div>
-            <button onclick="toggleChatDrawer()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs font-mono">
-            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-slate-300">
-                Olá! Sou o Sentinel IA conectado à API UseOneAI. Como posso ajudar na análise meteorológica e de riscos de maré agora?
-            </div>
-        </div>
-        <div class="p-4 border-t border-slate-800 bg-slate-900/50 flex space-x-2">
-            <input type="text" id="chat-input" onkeypress="if(event.key==='Enter')sendChatMessage()" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono" placeholder="Digite sua pergunta...">
-            <button onclick="sendChatMessage()" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-medium hover:bg-blue-500 transition"><i class="fa-solid fa-paper-plane"></i></button>
-        </div>
+    <!-- Status Sentinel 24/7 e Painel Admin / Checkout -->
+    <div class="glassmorphism rounded-xl px-3 py-2 flex items-center gap-3 pointer-events-auto shadow-2xl">
+      <div class="flex items-center gap-2 text-xs">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="font-mono text-emerald-400 font-semibold" id="sentinel-badge">SENTINEL 24/7 ATIVO</span>
+      </div>
+
+      <div class="h-4 w-px bg-slate-700"></div>
+
+      <button id="open-billing-modal" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition">
+        <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+        <span>Assinatura</span>
+      </button>
+
+      <button id="toggle-admin-btn" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+        <i data-lucide="shield-check" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- CAMADAS E CONTROLE DE TELEMETRIA (LATERAL ESQUERDA) -->
+  <aside class="absolute left-4 top-20 bottom-24 z-[500] w-72 flex flex-col gap-3 pointer-events-none">
+    
+    <!-- Painel de Camadas Dinâmicas -->
+    <div class="glassmorphism rounded-xl p-3.5 pointer-events-auto flex flex-col gap-2">
+      <div class="text-[11px] font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
+        <span>Camadas Ativas</span>
+        <i data-lucide="layers" class="w-3.5 h-3.5 text-cyan-400"></i>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-1.5 text-xs">
+        <button class="layer-btn active flex items-center gap-2 p-2 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-medium transition" data-layer="wind">
+          <i data-lucide="wind" class="w-3.5 h-3.5"></i> Vento Real
+        </button>
+        <button class="layer-btn flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-slate-300 font-medium hover:bg-slate-800 transition" data-layer="waves">
+          <i data-lucide="waves" class="w-3.5 h-3.5"></i> Ondas/Maré
+        </button>
+        <button class="layer-btn flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-slate-300 font-medium hover:bg-slate-800 transition" data-layer="temp">
+          <i data-lucide="thermometer" class="w-3.5 h-3.5"></i> Temperatura
+        </button>
+        <button class="layer-btn flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-slate-300 font-medium hover:bg-slate-800 transition" data-layer="pressure">
+          <i data-lucide="gauge" class="w-3.5 h-3.5"></i> Pressão
+        </button>
+      </div>
     </div>
 
-    <!-- Report & Creative Art Download Modal -->
-    <div id="report-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="glass max-w-lg w-full p-6 rounded-2xl border border-slate-800 space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-arrow-down text-blue-400 mr-2"></i>Laudo Executivo & Arte Criativa (Download)</h3>
-                <button onclick="closeReportModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2 font-mono">
-                    <p class="text-blue-400 font-bold">Resumo Preditivo Pronto para Download:</p>
-                    <p id="modal-report-content" class="text-slate-300">Gerando laudo completo com base nas coordenadas atuais...</p>
-                </div>
-                <div class="bg-blue-950/30 p-3 rounded-xl border border-blue-500/30 text-blue-300 flex items-center space-x-3">
-                    <i class="fa-solid fa-palette text-lg text-blue-400"></i>
-                    <div>
-                        <p class="font-bold">Arte Conceitual Gerada por IA</p>
-                        <p class="text-[10px] text-slate-400">Renderização visual de impacto otimizada para apresentações e compartilhamento de alerta.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="flex space-x-3 pt-2">
-                <button onclick="downloadReportFile()" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-2">
-                    <i class="fa-solid fa-download"></i><span>Baixar Arquivo Completo (.HTML)</span>
-                </button>
-                <button onclick="closeReportModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">Fechar</button>
-            </div>
+    <!-- Card de Telemetria Dinâmica do Ponto Selecionado -->
+    <div class="glassmorphism rounded-xl p-4 pointer-events-auto flex-1 flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+        <div>
+          <h3 id="location-name" class="font-bold text-sm text-white">Carregando Telemetria...</h3>
+          <p id="location-coords" class="text-[10px] font-mono text-cyan-400/80">-22.9068° S, -43.1729° W</p>
         </div>
+        <span id="station-status" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">ONLINE</span>
+      </div>
+
+      <div class="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-1">
+        <!-- Vento -->
+        <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span class="flex items-center gap-1.5"><i data-lucide="wind" class="w-3.5 h-3.5 text-cyan-400"></i> Velocidade do Vento</span>
+            <span id="wind-dir-badge" class="font-mono text-[11px] text-cyan-300">--</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="wind-speed" class="text-2xl font-black text-white font-mono">--</span>
+            <span class="text-xs text-slate-400">km/h</span>
+            <span id="wind-gusts" class="text-xs text-amber-400 ml-auto font-mono">Rajadas: -- km/h</span>
+          </div>
+        </div>
+
+        <!-- Marinha / Ondas (Em Metros) -->
+        <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span class="flex items-center gap-1.5"><i data-lucide="activity" class="w-3.5 h-3.5 text-blue-400"></i> Altura das Ondas</span>
+            <span class="font-mono text-[10px] text-blue-300">Bóia Oceânica</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="wave-height" class="text-2xl font-black text-cyan-400 font-mono">--</span>
+            <span class="text-xs text-slate-400">metros</span>
+            <span id="wave-period" class="text-xs text-slate-300 ml-auto font-mono">Período: -- s</span>
+          </div>
+        </div>
+
+        <!-- Temperatura e Sensação -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400">Temperatura</div>
+            <div class="flex items-baseline gap-1 mt-0.5">
+              <span id="air-temp" class="text-xl font-bold text-white font-mono">--</span>
+              <span class="text-xs text-slate-400">°C</span>
+            </div>
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400">Pressão Atmosf.</div>
+            <div class="flex items-baseline gap-1 mt-0.5">
+              <span id="air-pressure" class="text-xl font-bold text-white font-mono">--</span>
+              <span class="text-xs text-slate-400">hPa</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status do Sentinel Alertas Precoces -->
+        <div id="sentinel-alert-box" class="p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-xs">
+          <div class="font-bold text-emerald-400 flex items-center gap-1.5 mb-1">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span>Diagnóstico do Sentinela</span>
+          </div>
+          <p id="sentinel-diagnosis-text" class="text-[11px] text-slate-300 leading-relaxed">
+            Coletando telemetria em tempo real... Nenhuma anomalia severa no vetor atual.
+          </p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- BARRA DE TIMELINE/PREVISÃO HORÁRIA TIPO WINDY (RODAPÉ) -->
+  <footer class="absolute bottom-4 left-4 right-4 z-[500] glassmorphism rounded-xl p-3 pointer-events-auto flex flex-col gap-2 shadow-2xl">
+    <div class="flex items-center justify-between text-xs px-2">
+      <div class="flex items-center gap-2">
+        <button id="timeline-play-btn" class="w-7 h-7 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center transition shadow-md">
+          <i data-lucide="play" class="w-3.5 h-3.5 ml-0.5"></i>
+        </button>
+        <span class="font-bold text-slate-300">Linha Temporal Preditiva (48h)</span>
+        <span id="timeline-current-hour" class="text-cyan-400 font-mono text-[11px]">Agora</span>
+      </div>
+      <div class="text-[10px] font-mono text-slate-400">Open-Meteo High-Resolution Integrated Feeds</div>
     </div>
 
-    <!-- Leaflet & App Logic -->
-    <script>
-        let map, currentLayer = 'wind';
-        let currentCoords = { lat: -23.5505, lon: -46.6333, name: 'São Paulo, SP' };
+    <!-- Scroller Dinâmico de Previsão -->
+    <div id="forecast-scrubber" class="flex gap-2 overflow-x-auto custom-scrollbar pb-1 text-center font-mono">
+      <!-- Preenchido via Javascript dinamicamente -->
+    </div>
+  </footer>
 
-        function initMap() {
-            if (map) return;
-            map = L.map('map', { zoomControl: false }).setView([currentCoords.lat, currentCoords.lon], 11);
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
+  <!-- MODAL: LAUDO TÉCNICO GERADO PELA IA -->
+  <div id="ai-modal" class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glassmorphism w-full max-w-2xl rounded-2xl border border-cyan-500/30 p-6 flex flex-col max-h-[85vh] shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="file-check" class="w-5 h-5 text-cyan-400"></i>
+          <h2 class="text-base font-bold text-white tracking-wide">Laudo Técnico Preditivo Executivo</h2>
+        </div>
+        <button id="close-ai-modal" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
+      <div class="my-4 overflow-y-auto custom-scrollbar flex-1 space
 
-            updateLocationData();
-        }
-
-        function switchView(view) {
-            const mainView = document.getElementById('main-view');
-            const adminView = document.getElementById('admin-view');
-            if (view === 'admin') {
-                mainView.classList.add('hidden');
-                adminView.classList.remove('hidden');
-                adminView.classList.add('flex');
-            } else {
-                adminView.classList.add('hidden');
-                adminView.classList.remove('flex');
-                mainView.classList.remove('hidden');
-                setTimeout(() => { if (map) map.invalidateSize(); }, 200);
-            }
-        }
-
-        function setLayer(layer) {
-            currentLayer = layer;
-            ['wind', 'temp', 'rain', 'pres'].forEach(l => {
-                const btn = document.getElementById(`btn-layer-${l === 'pressure' ? 'pres' : l}`);
-                if (btn) {
-                    if (l === layer) {
-                        btn.className = "p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/50 text-blue-400 text-xs font-medium flex items-center space-x-2 transition";
-                    } else {
-                        btn.className = "p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 text-xs font-medium flex items-center space-x-2 hover:bg-slate-800 transition";
-                    }
-                }
-            });
-            fetchWeatherData();
-        }
-
-        async function updateLocationData() {
-            const query = document.getElementById('search-input').value.trim();
-            if (!query) return;
-
-            try {
-                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=pt&format=json`);
-                const data = await res.json();
-                if (data.results && data.results.length > 0) {
-                    const loc = data.results[0];
-                    currentCoords = { lat: loc.latitude, lon: loc.longitude, name: `${loc.name}, ${loc.admin1 || loc.country || ''}` };
-                    if (map) map.setView([currentCoords.lat, currentCoords.lon], 11);
-                    document.getElementById('current-location-label').innerText = currentCoords.name;
-                    document.getElementById('lat-val').innerText = currentCoords.lat.toFixed(4);
-                    document.getElementById('lon-val').innerText = currentCoords.lon.toFixed(4);
-                }
-            } catch (e) {
-                console.error("Erro no geocoding:", e);
-            }
-            fetchWeatherData();
-            fetchAIPrediction();
-        }
-
-        async function fetchWeatherData() {
-            try {
-                const { lat, lon } = currentCoords;
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,surface_pressure,wind_speed_10m,wind_gusts_10m&hourly=wave_height,wave_direction`);
-                const data = await res.json();
-                if (data.current) {
-                    const c = data.current;
-                    document.getElementById('val-temp').innerText = `${c.temperature_2m} °C`;
-                    document.getElementById('val-hum').innerText = `${c.relative_humidity_2m} %`;
-                    document.getElementById('val-wind').innerText = `${c.wind_speed_10m} / ${c.wind_gusts_10m} km/h`;
-                    document.getElementById('val-rain').innerText = `${c.precipitation} mm`;
-                    document.getElementById('update-timestamp').innerText = new Date().toLocaleTimeString();
-
-                    // Simulação exata de maré e altura de ondas em metros
-                    const waveH = (Math.random() * 1.5 + 0.5).toFixed(1);
-                    const tideTrend = c.surface_pressure < 1010 ? "MARÉ SUBINDO (Alerta de Ressaca / Sobreelevação)" : "MARÉ DESCENDENTE (Normalidade Costeira)";
-                    document.getElementById('val-wave-badge').innerText = `${waveH} m`;
-                    document.getElementById('val-tide').innerText = tideTrend;
-
-                    // Verificação automática de Alerta Precoce (Antes da Defesa Civil)
-                    if (c.wind_gusts_10m > 45 || c.precipitation > 15 || waveH > 2.0) {
-                        triggerPreemptiveAlert(c.wind_gusts_10m, c.precipitation, waveH);
-                    }
-                }
-            } catch (e) {
-                console.error("Erro ao buscar dados meteorológicos:", e);
-            }
-        }
-
-        async function fetchAIPrediction() {
-            const model = document.getElementById('global-ai-model').value;
-            const textEl = document.getElementById('ai-prediction-text');
-            textEl.innerText = `Consultando ${model} via UseOneAI...`;
-
-            try {
-                const response = await fetch('https://api.useoneai.app/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer sk-60aa3285a868c411ee43ff04b44c808c154978b83d3ad0e0'
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: "system", content: "Você é um meteorologista sênior e IA de monitoramento de defesa civil. Analise os dados atuais e forneça um laudo executivo ultracurto e direto sobre riscos climáticos." },
-                            { role: "user", content: `Analise a região de ${currentCoords.name} (Lat: ${currentCoords.lat}, Lon: ${currentCoords.lon}) com base no modelo ${model}.` }
-                        ]
-                    })
-                });
-
-                if (response.ok) {
-                    const json = await response.json();
-                    if (json.choices && json.choices[0].message) {
-                        textEl.innerText = json.choices[0].message.content;
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.warn("Fallback de IA ativado devido a restrição de CORS/rede:", e);
-            }
-
-            // Fallback robusto simulado caso a API externa sofra restrição de browser
-            textEl.innerText = `[Sentinel 24/7] Analisado por ${model}: Condições estáveis em ${currentCoords.name}. Sem rajadas críticas detectadas nas últimas 3 horas. Monitoramento contínuo ativo.`;
-        }
-
-        function triggerPreemptiveAlert(wind, rain, wave) {
-            document.body.classList.add('alert-active');
-            if (Notification.permission === "granted") {
-                new Notification("ALERTA PRECOCE — VAI DAR MERDA", {
-                    body: `Condição crítica iminente em ${currentCoords.name}! Vento: ${wind}km/h, Chuva: ${rain}mm, Ondas: ${wave}m. Antecipe-se à Defesa Civil!`,
-                    icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png"
-                });
-            }
-        }
-
-        function triggerManualAlert() {
-            document.body.classList.add('alert-active');
-            alert(`⚠️ ALERTA PRECOCE DISPARADO!\n\nSistema Sentinel acionado para ${currentCoords.name}. Notificação preventiva enviada antes dos boletins oficiais da Defesa Civil.`);
-            setTimeout(() => document.body.classList.remove('alert-active'), 5000);
-        }
-
-        function toggleChatDrawer() {
-            const drawer = document.getElementById('chat-drawer');
-            drawer.classList.toggle('translate-x-full');
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const container = document.getElementById('chat-messages');
-            const text = input.value.trim();
-            if (!text) return;
-
-            container.innerHTML += `<div class="bg-blue-600/20 p-3 rounded-xl border border-blue-500/30 text-slate-100"><b>Você:</b> ${text}</div>`;
-            input.value = '';
-            container.scrollTop = container.scrollHeight;
-
-            const model = document.getElementById('global-ai-model').value;
-            const loadingId = 'loading-' + Date.now();
-            container.innerHTML += `<div id="${loadingId}" class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-slate-400">Analisando via ${model}...</div>`;
-            container.scrollTop = container.scrollHeight;
-
-            try {
-                const response = await fetch('https://api.useoneai.app/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer sk-60aa3285a868c411ee43ff04b44c808c154978b83d3ad0e0'
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: "system", content: "Você é o assistente inteligente do sistema meteorológico Vai Dar Merda." },
-                            { role: "user", content: text }
-                        ]
-                    })
-                });
-
-                document.getElementById(loadingId).remove();
-                if (response.ok) {
-                    const json = await response.json();
-                    if (json.choices && json.choices[0].message) {
-                        container.innerHTML += `<div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-slate-200"><b>Sentinel:</b> ${json.choices[0].message.content}</div>`;
-                        container.scrollTop = container.scrollHeight;
-                        return;
-                    }
-                }
-            } catch (e) {
-                if (document.getElementById(loadingId)) document.getElementById(loadingId).remove();
-            }
-
-            container.innerHTML += `<div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-slate-200"><b>Sentinel:</b> Análise concluída para ${currentCoords.name}. Parâmetros operando dentro da normalidade monitorada.</div>`;
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function openReportModal() {
-            document.getElementById('modal-report-content').innerText = `Laudo Executivo — Local: ${currentCoords.name} (Lat: ${currentCoords.lat}, Lon: ${currentCoords.lon}). Monitoramento 24/7 ativo com integração UseOneAI.`;
-            document.getElementById('report-modal').classList.remove('hidden');
-        }
-
-        function closeReportModal() {
-            document.getElementById('report-modal').classList.add('hidden');
-        }
-
-        function downloadReportFile() {
-            const htmlContent = document.documentElement.outerHTML;
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `VaiDarMerda_Sentinel_${currentCoords.name.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        window.onload = initMap;
-    </script>
-</body>
-</html>
+        
